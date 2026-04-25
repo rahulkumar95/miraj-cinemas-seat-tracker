@@ -1,14 +1,24 @@
 <!DOCTYPE html>
 <html>
+<head>
+  <title>Seat Tracker</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+
 <body>
 
-<h2>Seat Tracker</h2>
+<h2>🎬 Seat Tracker</h2>
 
-<input id="movieId" placeholder="Movie ID">
-<input id="row" placeholder="Row">
+<input id="movieId" placeholder="Enter Movie ID"><br><br>
+<input id="row" placeholder="Enter Row (e.g. B)"><br><br>
 
 <button onclick="start()">Start Tracking</button>
 
+<!-- ✅ Firebase (MUST be before app.js) -->
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-messaging.js"></script>
+
+<!-- Your JS -->
 <script src="app.js"></script>
 
 </body>

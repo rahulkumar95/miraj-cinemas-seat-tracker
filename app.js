@@ -1,28 +1,59 @@
+// 🔥 Replace with your Firebase config
+const firebaseConfig = {
+    apiKey: "AIzaSyCXqXv-YG802yzBwPItL4MLdP1LtfwYdrc",
+    authDomain: "miraj-cinemas-seat-tracker.firebaseapp.com",
+    projectId: "miraj-cinemas-seat-tracker",
+    storageBucket: "miraj-cinemas-seat-tracker.firebasestorage.app",
+    messagingSenderId: "1052153141275",
+    appId: "1:1052153141275:web:5efb211370fb6c8e19c0be",
+    measurementId: "G-Y3R222RVED"
+  };
+
+// Initialize Firebase
+firebase.initializeApp(firebaseConfig);
+
+// Initialize messaging
+let messaging = null;
+
+if (firebase.messaging.isSupported()) {
+  messaging = firebase.messaging();
+} else {
+  alert("❌ Messaging not supported in this browser");
+}
+
+// Main function
 async function start() {
-  const permission = await Notification.requestPermission();
+  try {
+    if (!messaging) {
+      alert("Messaging not available");
+      return;
+    }
 
-  if (permission !== "granted") return;
+    // Ask permission
+    const permission = await Notification.requestPermission();
 
-  const token = await messaging.getToken({
-    vapidKey: "BJdiJWaKqtqkqJXywj1rGC9PQ4QoZbzwsuNsUUGjGAPR3SQF6TqZrIPIDIInTEUJPvSxdaWBCKLvHBpU2gmuZFM"
-  });
+    if (permission !== "granted") {
+      alert("Permission denied");
+      return;
+    }
 
-  const movieId = document.getElementById("movieId").value;
-  const row = document.getElementById("row").value;
+    // Register service worker (IMPORTANT)
+    const registration = await navigator.serviceWorker.register(
+      "/firebase-messaging-sw.js"
+    );
 
-  // send token
-  await fetch("https://miraj-cinemas-seat-tracker.onrender.com/save-token", {
-    method: "POST",
-    headers: {"Content-Type": "application/json"},
-    body: JSON.stringify({ token })
-  });
+    // Get token
+    const token = await messaging.getToken({
+      vapidKey: "BJdiJWaKqtqkqJXywj1rGC9PQ4QoZbzwsuNsUUGjGAPR3SQF6TqZrIPIDIInTEUJPvSxdaWBCKLvHBpU2gmuZFM",
+      serviceWorkerRegistration: registration
+    });
 
-  // start tracking
-  await fetch("https://miraj-cinemas-seat-tracker.onrender.com/track", {
-    method: "POST",
-    headers: {"Content-Type": "application/json"},
-    body: JSON.stringify({ movieId, row })
-  });
+    console.log("TOKEN:", token);
 
-  alert("Tracking started!");
+    alert("✅ Notifications enabled!");
+
+  } catch (err) {
+    console.error(err);
+    alert("Error: " + err.message);
+  }
 }
