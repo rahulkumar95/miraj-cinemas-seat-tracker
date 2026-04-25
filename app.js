@@ -200,9 +200,6 @@ async function startTracking() {
 
   const timeText = document.querySelector("#timings .selected")?.innerText || "";
 
-  // 🔥 Load existing
-  let list = JSON.parse(localStorage.getItem(TRACK_KEY) || "[]");
-
   // 🔥 CHECK DUPLICATE
   const exists = list.find(
     t =>
