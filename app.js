@@ -237,7 +237,7 @@ async function startTracking() {
     })
   });
 
-  alert(`✅ Tracking started: ${movieName} (${dateText} ${timeText}`);
+  alert(`✅ Tracking started: ${movieName} (${dateText} ${timeText})`);
 }
 
 // 📋 Show Active Trackings
@@ -273,43 +273,37 @@ async function removeTracking(index) {
 
   const item = list[index];
 
-  try {
-    // 🔥 Get token
-    const registration = await navigator.serviceWorker.ready;
+  // 🔥 Get token
+  const registration = await navigator.serviceWorker.ready;
 
-    const token = await messaging.getToken({
-      vapidKey: "BJdiJWaKqtqkqJXywj1rGC9PQ4QoZbzwsuNsUUGjGAPR3SQF6TqZrIPIDIInTEUJPvSxdaWBCKLvHBpU2gmuZFM",
-      serviceWorkerRegistration: registration
-    });
+  const token = await messaging.getToken({
+    vapidKey: "BJdiJWaKqtqkqJXywj1rGC9PQ4QoZbzwsuNsUUGjGAPR3SQF6TqZrIPIDIInTEUJPvSxdaWBCKLvHBpU2gmuZFM",
+    serviceWorkerRegistration: registration
+  });
 
-    // 🔥 Call backend to stop tracking
-    await fetch("https://miraj-cinemas-seat-tracker.onrender.com/untrack", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-        token,
-        movieId: item.movieId
-      })
-    });
+  // 🔥 Call backend to stop tracking
+  await fetch("https://miraj-cinemas-seat-tracker.onrender.com/untrack", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      token,
+      movieId: item.movieId
+    })
+  });
 
-    // 🔥 Remove locally
-    list.splice(index, 1);
+  // 🔥 Remove locally
+  list.splice(index, 1);
 
-    localStorage.setItem(TRACK_KEY, JSON.stringify(list));
+  localStorage.setItem(TRACK_KEY, JSON.stringify(list));
 
-    renderTrackings();
+  renderTrackings();
 
-    // ✅ SUCCESS ALERT
-    alert(`✅ Untracked: ${item.movieName} (${item.date} ${item.time})`);
+  // ✅ SUCCESS ALERT
+  alert(`✅ Untracked: ${item.movieName} (${item.date} ${item.time})`);
 
-  } catch (err) {
-    console.error(err);
 
-    // ❌ ERROR ALERT
-    alert("❌ Failed to untrack. Try again.");
-  }
 }
 
 // 🚀 init

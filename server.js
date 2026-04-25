@@ -46,7 +46,7 @@ app.post("/track", (req, res) => {
   res.send("✅ Tracking started");
 });
 
-// ❌ UNTRACK (NEW)
+// ❌ UNTRACK
 app.post("/untrack", (req, res) => {
   const { token, movieId } = req.body;
 
