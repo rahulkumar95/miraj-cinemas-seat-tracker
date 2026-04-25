@@ -27,6 +27,14 @@ async function start() {
       return;
     }
 
+    const movieId = document.getElementById("movieId").value;
+    const row = document.getElementById("row").value;
+
+    if (!movieId || !row) {
+      alert("Enter movieId and row");
+      return;
+    }
+
     // Ask permission
     const permission = await Notification.requestPermission();
 
@@ -35,20 +43,15 @@ async function start() {
       return;
     }
 
-    // ✅ Register Service Worker (FIXED PATH + SCOPE)
+    // Register service worker
     const registration = await navigator.serviceWorker.register(
       "firebase-messaging-sw.js",
-      {
-        scope: "./"
-      }
+      { scope: "./" }
     );
 
-    // ✅ WAIT for activation (VERY IMPORTANT)
     await navigator.serviceWorker.ready;
 
-    console.log("Service Worker Ready");
-
-    // ✅ Get token
+    // Get token
     const token = await messaging.getToken({
       vapidKey: "BJdiJWaKqtqkqJXywj1rGC9PQ4QoZbzwsuNsUUGjGAPR3SQF6TqZrIPIDIInTEUJPvSxdaWBCKLvHBpU2gmuZFM",
       serviceWorkerRegistration: registration
@@ -56,7 +59,20 @@ async function start() {
 
     console.log("TOKEN:", token);
 
-    alert("✅ Notifications enabled!");
+    // 🔥 IMPORTANT: send ALL in one API
+    await fetch("https://miraj-cinemas-seat-tracker.onrender.com/track", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        token,
+        movieId,
+        row
+      })
+    });
+
+    alert("✅ Tracking started!");
 
   } catch (err) {
     console.error(err);

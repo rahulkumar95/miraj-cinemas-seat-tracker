@@ -6,54 +6,103 @@ const admin = require("firebase-admin");
 const app = express();
 app.use(express.json());
 
-let tokens = [];
-let trackers = [];
+// 🔥 In-memory storage (simple version)
+let trackers = []; 
+// Each item: { token, movieId, row }
 
-// 🔥 Firebase setup
+// 🔑 Firebase Admin Setup
 const serviceAccount = require("./serviceAccount.json");
 
 admin.initializeApp({
   credential: admin.credential.cert(serviceAccount)
 });
 
-// Save device token
-app.post("/save-token", (req, res) => {
-  tokens.push(req.body.token);
-  res.send("Token saved");
-});
-
-// Save tracking request
+// 🚀 API: Start tracking
 app.post("/track", (req, res) => {
-  trackers.push(req.body); // { movieId, row }
-  res.send("Tracking started");
+  const { token, movieId, row } = req.body;
+
+  if (!token || !movieId || !row) {
+    return res.status(400).send("Missing fields");
+  }
+
+  // Avoid duplicates
+  const exists = trackers.find(
+    t => t.token === token && t.movieId === movieId && t.row === row
+  );
+
+  if (!exists) {
+    trackers.push({ token, movieId, row });
+  }
+
+  console.log("Current trackers:", trackers);
+
+  res.send("✅ Tracking started");
 });
 
-// ⏰ Runs every 5 mins
+// ⏰ Cron job: runs every 5 minutes
 cron.schedule("*/5 * * * *", async () => {
-  console.log("Checking seats...");
+  console.log("⏰ Checking seats...");
 
   for (let t of trackers) {
-    const res = await fetch(
-      `https://mirajcinemas.com/api/v1.0/webapp/seat_layout/${t.movieId}/0210`
-    );
-    const data = await res.json();
+    try {
+      const res = await fetch(
+        `https://mirajcinemas.com/api/v1.0/webapp/seat_layout/${t.movieId}/0210`
+      );
 
-    const seats = data.data.SeatLayout;
+      const data = await res.json();
 
-    const available = seats.filter(
-      s => s.RowName === t.row && s.IsAvailable
-    );
+      const areas = data?.data?.seatLayout?.result?.seats?.area;
 
-    if (available.length > 0 && tokens.length > 0) {
-      await admin.messaging().send({
-        notification: {
-          title: "🎉 Seats Available!",
-          body: `Row ${t.row} has seats`
-        },
-        token: tokens[0]
-      });
+      if (!areas) {
+        console.log("No seat data found");
+        continue;
+      }
+
+      let availableSeats = [];
+
+      for (let area of areas) {
+        for (let row of area.rows) {
+          if (row.strRowPhyID === t.row) {
+            for (let seat of row.seats) {
+              if (
+                seat.strSeatStatus === "0" && 
+                seat.strSeatNumber !== "0"
+              ) {
+                availableSeats.push(seat.strSeatNumber);
+              }
+            }
+          }
+        }
+      }
+
+      if (availableSeats.length > 0) {
+        console.log(`🎉 Seats found for Row ${t.row}:`, availableSeats);
+
+        await admin.messaging().send({
+          notification: {
+            title: "🎉 Seats Available!",
+            body: `Row ${t.row}: ${availableSeats.join(", ")}`
+          },
+          token: t.token
+        });
+
+      } else {
+        console.log(`❌ No seats for Row ${t.row}`);
+      }
+
+    } catch (err) {
+      console.error("Error checking seats:", err.message);
     }
   }
 });
 
-app.listen(3000, () => console.log("Server running"));
+// 🟢 Health check
+app.get("/", (req, res) => {
+  res.send("Server is running 🚀");
+});
+
+// 🚀 Start server
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
+});
