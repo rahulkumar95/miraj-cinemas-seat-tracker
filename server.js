@@ -1,9 +1,15 @@
 const express = require("express");
+const cors = require("cors");
 const cron = require("node-cron");
 const fetch = require("node-fetch");
 const admin = require("firebase-admin");
 
 const app = express();
+
+app.use(cors({
+  origin: "https://rahulkumar95.github.io"
+}));
+
 app.use(express.json());
 
 // 🔥 In-memory storage (simple version)
