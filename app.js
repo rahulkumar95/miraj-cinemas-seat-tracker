@@ -226,11 +226,34 @@ function renderTrackings() {
 }
 
 // ❌ Remove tracking
-function removeTracking(index) {
+async function removeTracking(index) {
   let list = JSON.parse(localStorage.getItem(TRACK_KEY) || "[]");
 
-  list.splice(index, 1);
+  const item = list[index];
 
+  // 🔥 Get token again
+  const registration = await navigator.serviceWorker.ready;
+
+  const token = await messaging.getToken({
+    vapidKey: "BJdiJWaKqtqkqJXywj1rGC9PQ4QoZbzwsuNsUUGjGAPR3SQF6TqZrIPIDIInTEUJPvSxdaWBCKLvHBpU2gmuZFM",
+    serviceWorkerRegistration: registration
+  });
+
+  // 🔥 Call backend
+  await fetch("https://miraj-cinemas-seat-tracker.onrender.com/untrack", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      token,
+      movieId: item.movieId
+    })
+  });
+
+  // 🔥 Remove locally
+  list.splice(index, 1);
+  
   localStorage.setItem(TRACK_KEY, JSON.stringify(list));
 
   renderTrackings();

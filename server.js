@@ -10,23 +10,27 @@ app.use(cors({
 }));
 app.use(express.json());
 
-// 🔥 Store trackers
-// { token, movieId (sessionId) }
+// 🔥 In-memory store
 let trackers = [];
 
-// 🔑 Firebase setup
+// 🔑 Firebase
 const serviceAccount = require("/etc/secrets/serviceAccount.json");
 
 admin.initializeApp({
   credential: admin.credential.cert(serviceAccount)
 });
 
-// 🚀 API to start tracking
+// 🟢 Health
+app.get("/health", (req, res) => {
+  res.send("OK");
+});
+
+// ✅ TRACK
 app.post("/track", (req, res) => {
-  const { token, movieId } = req.body;
+  const { token, movieId, area } = req.body;
 
   if (!token || !movieId) {
-    return res.status(400).send("Missing token/movieId");
+    return res.status(400).send("Missing data");
   }
 
   const exists = trackers.find(
@@ -34,23 +38,34 @@ app.post("/track", (req, res) => {
   );
 
   if (!exists) {
-    trackers.push({ token, movieId });
+    trackers.push({ token, movieId, area });
   }
 
-  console.log("Trackers:", trackers);
+  console.log("✅ Added tracking:", movieId);
 
   res.send("✅ Tracking started");
 });
 
-// ⏱ Prevent overlapping runs
+// ❌ UNTRACK (NEW)
+app.post("/untrack", (req, res) => {
+  const { token, movieId } = req.body;
+
+  trackers = trackers.filter(
+    t => !(t.token === token && t.movieId === movieId)
+  );
+
+  console.log("❌ Removed tracking:", movieId);
+
+  res.send("Tracking removed");
+});
+
+// ⏱ Prevent overlap
 let isRunning = false;
 
-// ⏰ Run every 30 seconds
+// ⏰ Check seats
 cron.schedule("*/1 * * * *", async () => {
   if (isRunning) return;
   isRunning = true;
-
-  console.log("⏰ Checking seats...");
 
   for (let t of trackers) {
     try {
@@ -60,23 +75,25 @@ cron.schedule("*/1 * * * *", async () => {
 
       const data = await res.json();
 
-      const movieName =
-        data?.data?.movieDetails?.Film_strTitle || "Movie";
-
       const rawTime =
         data?.data?.sessionDetails?.Session_dtmRealShow;
+
+      const movieName =
+        data?.data?.movieDetails?.Film_strTitle || "Movie";
 
       const timing = rawTime
         ? new Date(rawTime).toLocaleTimeString("en-IN", {
           hour: "2-digit",
           minute: "2-digit"
         })
-        : "Time";
+        : "";
 
-      const dateStr = new Date(rawTime).toLocaleDateString("en-IN", {
-        day: "numeric",
-        month: "short"
-      });
+      const dateStr = rawTime
+        ? new Date(rawTime).toLocaleDateString("en-IN", {
+          day: "numeric",
+          month: "short"
+        })
+        : "";
 
       const areas =
         data?.data?.seatLayout?.result?.seats?.area;
@@ -85,9 +102,8 @@ cron.schedule("*/1 * * * *", async () => {
 
       let result = [];
 
-      // 🎯 ONLY SPECIAL AREA
       for (let area of areas) {
-        if (area.strAreaDesc === "SPECIAL") {
+        if (area.strAreaDesc === t.area) {
           for (let row of area.rows) {
             let seats = [];
 
@@ -112,52 +128,29 @@ cron.schedule("*/1 * * * *", async () => {
 
       if (result.length > 0) {
         const seatSummary = result
-          .map(
-            r =>
-              `${r.row}(${r.seats.length}): ${r.seats.join(",")}`
-          )
+          .map(r => `${r.row}(${r.seats.length}): ${r.seats.join(",")}`)
           .join(" | ");
 
-        console.log(
-          `🎉 Seats found for ${movieName} ${timing}:`,
-          seatSummary
-        );
-
-        try {
-          const response = await admin.messaging().send({
+        await admin.messaging().send({
+          notification: {
+            title: `🎬 ${movieName}`,
+            body: `${dateStr} ${timing} | ${seatSummary}`
+          },
+          android: {
+            priority: "high",
             notification: {
-              title: `🎬 ${movieName}`,
-              body: `${dateStr} ${timing} | ${seatSummary}`
-            },
-            android: {
-              priority: "high",
-              notification: {
-                channelId: "seat-alerts-v1",
-                sound: "default",
-                tag: `${t.movieId}`   // ✅ grouping still works
-              }
-            },
-            token: t.token
-          });
+              channelId: "seat-alerts-v1",
+              sound: "default",
+              tag: `${t.movieId}`
+            }
+          },
+          data: {
+            tag: `${t.movieId}`   // 👈 for service worker
+          },
+          token: t.token
+        });
 
-          console.log("✅ Notification sent:", response);
-        } catch (err) {
-          console.error("❌ Firebase error:", err.message);
-
-          // Remove invalid tokens
-          if (
-            err.code ===
-            "messaging/registration-token-not-registered"
-          ) {
-            trackers = trackers.filter(
-              x => x.token !== t.token
-            );
-          }
-        }
-      } else {
-        console.log(
-          `❌ No seats for ${movieName} ${timing}`
-        );
+        console.log("✅ Notified:", movieName);
       }
     } catch (err) {
       console.error("Error:", err.message);
@@ -167,13 +160,14 @@ cron.schedule("*/1 * * * *", async () => {
   isRunning = false;
 });
 
-// 🟢 Health check
+// 🚀 Root
 app.get("/", (req, res) => {
   res.send("Server running 🚀");
 });
 
-// 🚀 Start server
+// 🚀 Start
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () =>
-  console.log(`Server running on port ${PORT}`)
-);
+
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
+});

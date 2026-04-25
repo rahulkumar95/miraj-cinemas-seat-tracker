@@ -18,14 +18,28 @@ const messaging = firebase.messaging();
 messaging.setBackgroundMessageHandler(function (payload) {
   console.log("Background message:", payload);
 
-  return self.registration.showNotification(
-    payload.notification.title,
-    {
-      body: payload.notification.body,
-      icon: "icon.png",
-      sound: "default", // 🔥 important
-      vibrate: [200, 100, 200],
-      requireInteraction: true // 🔥 keeps popup longer
-    }
-  );
+  const title = payload.notification?.title || "Seat Alert";
+
+  const body = payload.notification?.body || "";
+
+  // 🔥 get tag from BOTH android + data
+  const tag =
+    payload.data?.tag ||
+    payload.notification?.tag ||
+    "seat-alert";
+
+  return self.registration.showNotification(title, {
+    body: body,
+    icon: "icon.png",
+    sound: "default", // 🔥 important
+
+    // 🔥 ANDROID + WEB COMPATIBLE
+    tag: tag,                 // grouping
+    renotify: true,           // 🔥 re-alert on update
+    vibrate: [200, 100, 200],
+    requireInteraction: true,
+
+    // 🔥 Android hint (not always respected in PWA)
+    silent: false
+  });
 });
