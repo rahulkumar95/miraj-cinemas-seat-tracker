@@ -193,13 +193,30 @@ async function startTracking() {
   // 🔥 Save locally
   let list = JSON.parse(localStorage.getItem(TRACK_KEY) || "[]");
 
-  // 🔥 Get selected button text
+  // 🔥 Get display values
   const movieName = document.querySelector(".movie-card.selected .movie-title")?.innerText || "Movie";
 
   const dateText = document.querySelector("#dates .selected")?.innerText || selectedDate;
 
   const timeText = document.querySelector("#timings .selected")?.innerText || "";
 
+  // 🔥 Load existing
+  let list = JSON.parse(localStorage.getItem(TRACK_KEY) || "[]");
+
+  // 🔥 CHECK DUPLICATE
+  const exists = list.find(
+    t =>
+      t.movieId === selectedSessionId &&
+      t.date === dateText &&
+      t.time === timeText
+  );
+
+  if (exists) {
+    alert("⚠️ Already tracking this show");
+    return;
+  }
+
+  // ✅ ADD ONLY IF NOT EXISTS
   list.push({
     movieId: selectedSessionId,
     movieName,
@@ -223,7 +240,7 @@ async function startTracking() {
     })
   });
 
-  alert("✅ Tracking started!");
+  alert(`✅ Tracking started: ${movieName} (${dateText} ${timeText}`);
 }
 
 // 📋 Show Active Trackings
@@ -259,32 +276,43 @@ async function removeTracking(index) {
 
   const item = list[index];
 
-  // 🔥 Get token again
-  const registration = await navigator.serviceWorker.ready;
+  try {
+    // 🔥 Get token
+    const registration = await navigator.serviceWorker.ready;
 
-  const token = await messaging.getToken({
-    vapidKey: "BJdiJWaKqtqkqJXywj1rGC9PQ4QoZbzwsuNsUUGjGAPR3SQF6TqZrIPIDIInTEUJPvSxdaWBCKLvHBpU2gmuZFM",
-    serviceWorkerRegistration: registration
-  });
+    const token = await messaging.getToken({
+      vapidKey: "BJdiJWaKqtqkqJXywj1rGC9PQ4QoZbzwsuNsUUGjGAPR3SQF6TqZrIPIDIInTEUJPvSxdaWBCKLvHBpU2gmuZFM",
+      serviceWorkerRegistration: registration
+    });
 
-  // 🔥 Call backend
-  await fetch("https://miraj-cinemas-seat-tracker.onrender.com/untrack", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json"
-    },
-    body: JSON.stringify({
-      token,
-      movieId: item.movieId
-    })
-  });
+    // 🔥 Call backend to stop tracking
+    await fetch("https://miraj-cinemas-seat-tracker.onrender.com/untrack", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        token,
+        movieId: item.movieId
+      })
+    });
 
-  // 🔥 Remove locally
-  list.splice(index, 1);
+    // 🔥 Remove locally
+    list.splice(index, 1);
 
-  localStorage.setItem(TRACK_KEY, JSON.stringify(list));
+    localStorage.setItem(TRACK_KEY, JSON.stringify(list));
 
-  renderTrackings();
+    renderTrackings();
+
+    // ✅ SUCCESS ALERT
+    alert(`✅ Untracked: ${item.movieName} (${item.date} ${item.time})`);
+
+  } catch (err) {
+    console.error(err);
+
+    // ❌ ERROR ALERT
+    alert("❌ Failed to untrack. Try again.");
+  }
 }
 
 // 🚀 init
