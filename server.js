@@ -5,48 +5,51 @@ const fetch = require("node-fetch");
 const admin = require("firebase-admin");
 
 const app = express();
-
 app.use(cors({
   origin: "https://rahulkumar95.github.io"
 }));
-
 app.use(express.json());
 
-// 🔥 In-memory storage (simple version)
+// 🔥 Store trackers
+// { token, movieId (sessionId) }
 let trackers = [];
-// Each item: { token, movieId, row }
 
-// 🔑 Firebase Admin Setup
+// 🔑 Firebase setup
 const serviceAccount = require("/etc/secrets/serviceAccount.json");
 
 admin.initializeApp({
   credential: admin.credential.cert(serviceAccount)
 });
 
-// 🚀 API: Start tracking
+// 🚀 API to start tracking
 app.post("/track", (req, res) => {
-  const { token, movieId, row } = req.body;
+  const { token, movieId } = req.body;
 
-  if (!token || !movieId || !row) {
-    return res.status(400).send("Missing fields");
+  if (!token || !movieId) {
+    return res.status(400).send("Missing token/movieId");
   }
 
-  // Avoid duplicates
   const exists = trackers.find(
-    t => t.token === token && t.movieId === movieId && t.row === row
+    t => t.token === token && t.movieId === movieId
   );
 
   if (!exists) {
-    trackers.push({ token, movieId, row });
+    trackers.push({ token, movieId });
   }
 
-  console.log("Current trackers:", trackers);
+  console.log("Trackers:", trackers);
 
   res.send("✅ Tracking started");
 });
 
-// ⏰ Cron job: runs every 5 minutes
+// ⏱ Prevent overlapping runs
+let isRunning = false;
+
+// ⏰ Run every 30 seconds
 cron.schedule("*/1 * * * *", async () => {
+  if (isRunning) return;
+  isRunning = true;
+
   console.log("⏰ Checking seats...");
 
   for (let t of trackers) {
@@ -57,66 +60,116 @@ cron.schedule("*/1 * * * *", async () => {
 
       const data = await res.json();
 
-      const areas = data?.data?.seatLayout?.result?.seats?.area;
+      const movieName =
+        data?.data?.movieDetails?.Film_strTitle || "Movie";
 
-      if (!areas) {
-        console.log("No seat data found");
-        continue;
-      }
+      const rawTime =
+        data?.data?.sessionDetails?.Session_dtmRealShow;
 
-      let availableSeats = [];
+      const timing = rawTime
+        ? new Date(rawTime).toLocaleTimeString("en-IN", {
+          hour: "2-digit",
+          minute: "2-digit"
+        })
+        : "Time";
 
+      const areas =
+        data?.data?.seatLayout?.result?.seats?.area;
+
+      if (!areas) continue;
+
+      let result = [];
+
+      // 🎯 ONLY SPECIAL AREA
       for (let area of areas) {
-        for (let row of area.rows) {
-          if (row.strRowPhyID === t.row) {
+        if (area.strAreaDesc === "SPECIAL") {
+          for (let row of area.rows) {
+            let seats = [];
+
             for (let seat of row.seats) {
               if (
                 seat.strSeatStatus === "0" &&
                 seat.strSeatNumber !== "0"
               ) {
-                availableSeats.push(seat.strSeatNumber);
+                seats.push(seat.strSeatNumber);
               }
+            }
+
+            if (seats.length > 0) {
+              result.push({
+                row: row.strRowPhyID,
+                seats: seats
+              });
             }
           }
         }
       }
 
-      if (availableSeats.length > 0) {
-        console.log(`🎉 Seats found for Row ${t.row}:`, availableSeats);
+      if (result.length > 0) {
+        const seatSummary = result
+          .map(
+            r =>
+              `${r.row}(${r.seats.length}): ${r.seats.join(",")}`
+          )
+          .join(" | ");
 
-        await admin.messaging().send({
-          notification: {
-            title: "🎉 Seats Available!",
-            body: `Row ${t.row}: ${availableSeats.join(", ")}`
-          },
-          android: {
-            priority: "high",
+        console.log(
+          `🎉 Seats found for ${movieName} ${timing}:`,
+          seatSummary
+        );
+
+        try {
+          const response = await admin.messaging().send({
             notification: {
-              sound: "default",
-              channelId: "seat-alerts",
-              vibrateTimingsMillis: [0, 500, 200, 500]
-            }
-          },
-          token: t.token
-        });
+              title: `🎬 ${movieName}`,
+              body: `${timing} | ${seatSummary}`
+            },
+            android: {
+              priority: "high",
+              notification: {
+                channelId: "seat-alerts-v1",
+                sound: "default",
+                tag: `${t.movieId}`, // 🔥 grouping
+                renotify: true
+              }
+            },
+            token: t.token
+          });
 
+          console.log("✅ Notification sent:", response);
+        } catch (err) {
+          console.error("❌ Firebase error:", err.message);
+
+          // Remove invalid tokens
+          if (
+            err.code ===
+            "messaging/registration-token-not-registered"
+          ) {
+            trackers = trackers.filter(
+              x => x.token !== t.token
+            );
+          }
+        }
       } else {
-        console.log(`❌ No seats for Row ${t.row}`);
+        console.log(
+          `❌ No seats for ${movieName} ${timing}`
+        );
       }
-
     } catch (err) {
-      console.error("Error checking seats:", err.message);
+      console.error("Error:", err.message);
     }
   }
+
+  isRunning = false;
 });
 
 // 🟢 Health check
 app.get("/", (req, res) => {
-  res.send("Server is running 🚀");
+  res.send("Server running 🚀");
 });
 
 // 🚀 Start server
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
-});
+app.listen(PORT, () =>
+  console.log(`Server running on port ${PORT}`)
+);

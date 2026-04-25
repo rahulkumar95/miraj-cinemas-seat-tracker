@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html>
+
 <head>
   <title>Seat Tracker</title>
 
@@ -8,23 +9,82 @@
   <meta name="mobile-web-app-capable" content="yes">
 
   <link rel="manifest" href="manifest.json">
+
+  <style>
+    body {
+      font-family: Arial;
+      margin: 10px;
+    }
+
+    h2 {
+      margin-top: 20px;
+    }
+
+    #movies {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+      gap: 12px;
+    }
+
+    .movie-card {
+      text-align: center;
+      cursor: pointer;
+      transition: transform 0.2s;
+    }
+
+    .movie-card:hover {
+      transform: scale(1.05);
+    }
+
+    .movie-card img {
+      width: 100%;
+      border-radius: 10px;
+    }
+
+    .movie-title {
+      font-size: 12px;
+      margin-top: 5px;
+    }
+
+    button {
+      margin: 5px;
+      padding: 10px;
+      border-radius: 6px;
+      border: none;
+      background: #007bff;
+      color: white;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background: #0056b3;
+    }
+
+    .selected {
+      background: green !important;
+    }
+  </style>
 </head>
 
 <body>
 
-<h2>🎬 Seat Tracker</h2>
+  <h2>🎬 Movies</h2>
+  <div id="movies"></div>
 
-<input id="movieId" placeholder="Enter Movie ID"><br><br>
-<input id="row" placeholder="Enter Row (e.g. B)"><br><br>
+  <h2>📅 Dates</h2>
+  <div id="dates"></div>
 
-<button onclick="start()">Start Tracking</button>
+  <h2>⏰ Timings</h2>
+  <div id="timings"></div>
 
-<!-- Firebase -->
-<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-messaging.js"></script>
+  <button onclick="startTracking()">Start Tracking</button>
 
-<!-- Your JS -->
-<script src="app.js"></script>
+  <!-- Firebase -->
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-messaging.js"></script>
+
+  <script src="app.js"></script>
 
 </body>
+
 </html>

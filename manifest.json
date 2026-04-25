@@ -1,6 +1,6 @@
 {
   "name": "Miraj Seat Tracker",
-  "short_name": "SeatTracker",
+  "short_name": "MirajSeatTracker",
   "start_url": ".",
   "display": "standalone",
   "background_color": "#ffffff",
