@@ -17,6 +17,9 @@ let selectedMovie = null;
 let selectedDate = null;
 let selectedSessionId = null;
 
+// 🔥 LOCAL STORAGE KEY
+const TRACK_KEY = "seat_trackings";
+
 // 🎬 Load Movies
 async function loadMovies() {
   const res = await fetch("https://mirajcinemas.com/api/v1.0/webapp/movies", {
@@ -43,10 +46,6 @@ async function loadMovies() {
     const img = document.createElement("img");
     img.src = "https://mirajcinemas.com" + movie.image_path_1;
 
-    img.onerror = () => {
-      img.src = "https://via.placeholder.com/150";
-    };
-
     const title = document.createElement("div");
     title.className = "movie-title";
     title.innerText = movie.Film_strTitle;
@@ -54,7 +53,17 @@ async function loadMovies() {
     card.appendChild(img);
     card.appendChild(title);
 
-    card.onclick = () => loadDates(movie.Film_strCode);
+    card.onclick = () => {
+      // 🔥 CLEAR OLD UI
+      document.getElementById("dates").innerHTML = "";
+      document.getElementById("timings").innerHTML = "";
+      selectedSessionId = null;
+
+      loadDates(movie.Film_strCode);
+
+      // 🔥 SCROLL
+      document.getElementById("dates").scrollIntoView({ behavior: "smooth" });
+    };
 
     container.appendChild(card);
   });
@@ -88,6 +97,9 @@ function loadDates(movieCode) {
       btn.classList.add("selected");
 
       loadTimings(movieCode, dateStr);
+
+      // 🔥 SCROLL
+      document.getElementById("timings").scrollIntoView({ behavior: "smooth" });
     };
 
     container.appendChild(btn);
@@ -101,9 +113,7 @@ async function loadTimings(movieCode, date) {
   const res = await fetch(
     `https://mirajcinemas.com/api/v1.0/webapp/session/${movieCode}/${date}`,
     {
-      headers: {
-        "city-id": "4"
-      }
+      headers: { "city-id": "4" }
     }
   );
 
@@ -115,11 +125,9 @@ async function loadTimings(movieCode, date) {
 
   let foundTiming = false;
 
-  // 🔍 Loop through sessions
   sessions.forEach(s => {
     (s.sessionDetails || []).forEach(detail => {
       (detail.timing || []).forEach(t => {
-
         foundTiming = true;
 
         const formattedTime = new Date(t.time).toLocaleTimeString("en-IN", {
@@ -143,15 +151,8 @@ async function loadTimings(movieCode, date) {
     });
   });
 
-  // 🚨 No timings found
   if (!foundTiming) {
     alert("⚠️ No shows opened yet");
-
-    const msg = document.createElement("div");
-    msg.innerText = "No shows available for this date";
-    msg.style.color = "red";
-
-    container.appendChild(msg);
   }
 }
 
@@ -163,11 +164,7 @@ async function startTracking() {
   }
 
   const permission = await Notification.requestPermission();
-
-  if (permission !== "granted") {
-    alert("Permission denied");
-    return;
-  }
+  if (permission !== "granted") return;
 
   const registration = await navigator.serviceWorker.register(
     "firebase-messaging-sw.js"
@@ -179,6 +176,18 @@ async function startTracking() {
     vapidKey: "BJdiJWaKqtqkqJXywj1rGC9PQ4QoZbzwsuNsUUGjGAPR3SQF6TqZrIPIDIInTEUJPvSxdaWBCKLvHBpU2gmuZFM",
     serviceWorkerRegistration: registration
   });
+
+  // 🔥 Save locally
+  let list = JSON.parse(localStorage.getItem(TRACK_KEY) || "[]");
+
+  list.push({
+    movieId: selectedSessionId,
+    date: selectedDate
+  });
+
+  localStorage.setItem(TRACK_KEY, JSON.stringify(list));
+
+  renderTrackings();
 
   await fetch("https://miraj-cinemas-seat-tracker.onrender.com/track", {
     method: "POST",
@@ -195,5 +204,38 @@ async function startTracking() {
   alert("✅ Tracking started!");
 }
 
+// 📋 Show Active Trackings
+function renderTrackings() {
+  const container = document.getElementById("active");
+  if (!container) return;
+
+  container.innerHTML = "";
+
+  let list = JSON.parse(localStorage.getItem(TRACK_KEY) || "[]");
+
+  list.forEach((t, index) => {
+    const div = document.createElement("div");
+
+    div.innerHTML = `
+      Tracking: ${t.date} (Session ${t.movieId})
+      <button onclick="removeTracking(${index})">❌</button>
+    `;
+
+    container.appendChild(div);
+  });
+}
+
+// ❌ Remove tracking
+function removeTracking(index) {
+  let list = JSON.parse(localStorage.getItem(TRACK_KEY) || "[]");
+
+  list.splice(index, 1);
+
+  localStorage.setItem(TRACK_KEY, JSON.stringify(list));
+
+  renderTrackings();
+}
+
 // 🚀 init
 loadMovies();
+renderTrackings();

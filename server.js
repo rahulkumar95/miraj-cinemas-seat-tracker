@@ -45,6 +45,11 @@ app.post("/track", (req, res) => {
 // ⏱ Prevent overlapping runs
 let isRunning = false;
 
+const dateStr = new Date(rawTime).toLocaleDateString("en-IN", {
+  day: "numeric",
+  month: "short"
+});
+
 // ⏰ Run every 30 seconds
 cron.schedule("*/1 * * * *", async () => {
   if (isRunning) return;
@@ -122,7 +127,7 @@ cron.schedule("*/1 * * * *", async () => {
           const response = await admin.messaging().send({
             notification: {
               title: `🎬 ${movieName}`,
-              body: `${timing} | ${seatSummary}`
+              body: `${dateStr} ${timing} | ${seatSummary}`
             },
             android: {
               priority: "high",
