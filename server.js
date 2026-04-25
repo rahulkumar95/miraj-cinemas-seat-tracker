@@ -46,7 +46,7 @@ app.post("/track", (req, res) => {
 });
 
 // ⏰ Cron job: runs every 5 minutes
-cron.schedule("*/5 * * * *", async () => {
+cron.schedule("*/1 * * * *", async () => {
   console.log("⏰ Checking seats...");
 
   for (let t of trackers) {
