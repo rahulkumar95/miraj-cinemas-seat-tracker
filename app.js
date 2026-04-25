@@ -54,15 +54,28 @@ async function loadMovies() {
     card.appendChild(title);
 
     card.onclick = () => {
-      // 🔥 CLEAR OLD UI
-      document.getElementById("dates").innerHTML = "";
-      document.getElementById("timings").innerHTML = "";
+      // 🔥 Highlight selected movie
+      document.querySelectorAll(".movie-card").forEach(c => c.classList.remove("selected"));
+      card.classList.add("selected");
+
+      // 🔥 Reset selections
+      selectedMovie = movie.Film_strCode;
+      selectedDate = null;
       selectedSessionId = null;
 
+      // 🔥 Clear UI
+      document.getElementById("dates").innerHTML = "";
+      document.getElementById("timings").innerHTML = "";
+
+      // 🔥 Load dates for selected movie
       loadDates(movie.Film_strCode);
 
-      // 🔥 SCROLL
-      document.getElementById("dates").scrollIntoView({ behavior: "smooth" });
+      // 🔥 Smooth scroll (mobile friendly)
+      setTimeout(() => {
+        document.getElementById("dates").scrollIntoView({
+          behavior: "smooth"
+        });
+      }, 200);
     };
 
     container.appendChild(card);
@@ -180,9 +193,18 @@ async function startTracking() {
   // 🔥 Save locally
   let list = JSON.parse(localStorage.getItem(TRACK_KEY) || "[]");
 
+  // 🔥 Get selected button text
+  const movieName = document.querySelector(".movie-card.selected .movie-title")?.innerText || "Movie";
+
+  const dateText = document.querySelector("#dates .selected")?.innerText || selectedDate;
+
+  const timeText = document.querySelector("#timings .selected")?.innerText || "";
+
   list.push({
     movieId: selectedSessionId,
-    date: selectedDate
+    movieName,
+    date: dateText,
+    time: timeText
   });
 
   localStorage.setItem(TRACK_KEY, JSON.stringify(list));
@@ -216,9 +238,15 @@ function renderTrackings() {
   list.forEach((t, index) => {
     const div = document.createElement("div");
 
+    div.style.marginBottom = "10px";
+    div.style.padding = "10px";
+    div.style.border = "1px solid #ccc";
+    div.style.borderRadius = "8px";
+
     div.innerHTML = `
-      Tracking: ${t.date} (Session ${t.movieId})
-      <button onclick="removeTracking(${index})">❌</button>
+      <div><b>🎬 ${t.movieName}</b></div>
+      <div>📅 ${t.date} | ⏰ ${t.time}</div>
+      <button onclick="removeTracking(${index})">❌ Untrack</button>
     `;
 
     container.appendChild(div);
@@ -253,7 +281,7 @@ async function removeTracking(index) {
 
   // 🔥 Remove locally
   list.splice(index, 1);
-  
+
   localStorage.setItem(TRACK_KEY, JSON.stringify(list));
 
   renderTrackings();
