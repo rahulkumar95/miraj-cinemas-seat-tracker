@@ -21,7 +21,11 @@ messaging.setBackgroundMessageHandler(function(payload) {
   return self.registration.showNotification(
     payload.notification.title,
     {
-      body: payload.notification.body
+      body: payload.notification.body,
+      icon: "icon.png",
+      sound: "default", // 🔥 important
+      vibrate: [200, 100, 200],
+      requireInteraction: true // 🔥 keeps popup longer
     }
   );
 });

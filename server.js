@@ -13,7 +13,7 @@ app.use(cors({
 app.use(express.json());
 
 // 🔥 In-memory storage (simple version)
-let trackers = []; 
+let trackers = [];
 // Each item: { token, movieId, row }
 
 // 🔑 Firebase Admin Setup
@@ -71,7 +71,7 @@ cron.schedule("*/1 * * * *", async () => {
           if (row.strRowPhyID === t.row) {
             for (let seat of row.seats) {
               if (
-                seat.strSeatStatus === "0" && 
+                seat.strSeatStatus === "0" &&
                 seat.strSeatNumber !== "0"
               ) {
                 availableSeats.push(seat.strSeatNumber);
@@ -88,6 +88,14 @@ cron.schedule("*/1 * * * *", async () => {
           notification: {
             title: "🎉 Seats Available!",
             body: `Row ${t.row}: ${availableSeats.join(", ")}`
+          },
+          android: {
+            priority: "high",
+            notification: {
+              sound: "default",
+              channelId: "seat-alerts",
+              vibrateTimingsMillis: [0, 500, 200, 500]
+            }
           },
           token: t.token
         });
