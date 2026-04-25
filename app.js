@@ -19,7 +19,7 @@ async function start() {
   if (permission !== "granted") return;
 
   const token = await messaging.getToken({
-    vapidKey: "YOUR_VAPID_KEY"
+    vapidKey: "BJdiJWaKqtqkqJXywj1rGC9PQ4QoZbzwsuNsUUGjGAPR3SQF6TqZrIPIDIInTEUJPvSxdaWBCKLvHBpU2gmuZFM"
   });
 
   const movieId = document.getElementById("movieId").value;
