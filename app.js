@@ -9,19 +9,17 @@ const firebaseConfig = {
     measurementId: "G-Y3R222RVED"
   };
 
-// Initialize Firebase
+// Init Firebase
 firebase.initializeApp(firebaseConfig);
 
-// Initialize messaging
 let messaging = null;
 
 if (firebase.messaging.isSupported()) {
   messaging = firebase.messaging();
 } else {
-  alert("❌ Messaging not supported in this browser");
+  alert("❌ Messaging not supported");
 }
 
-// Main function
 async function start() {
   try {
     if (!messaging) {
@@ -37,12 +35,20 @@ async function start() {
       return;
     }
 
-    // Register service worker (IMPORTANT)
+    // ✅ Register Service Worker (FIXED PATH + SCOPE)
     const registration = await navigator.serviceWorker.register(
-      "firebase-messaging-sw.js"
+      "firebase-messaging-sw.js",
+      {
+        scope: "./"
+      }
     );
 
-    // Get token
+    // ✅ WAIT for activation (VERY IMPORTANT)
+    await navigator.serviceWorker.ready;
+
+    console.log("Service Worker Ready");
+
+    // ✅ Get token
     const token = await messaging.getToken({
       vapidKey: "BJdiJWaKqtqkqJXywj1rGC9PQ4QoZbzwsuNsUUGjGAPR3SQF6TqZrIPIDIInTEUJPvSxdaWBCKLvHBpU2gmuZFM",
       serviceWorkerRegistration: registration

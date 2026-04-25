@@ -1,7 +1,7 @@
 importScripts("https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js");
 importScripts("https://www.gstatic.com/firebasejs/8.10.1/firebase-messaging.js");
 
-// 🔥 Same config as app.js
+// 🔥 SAME config as app.js
 firebase.initializeApp({
     apiKey: "AIzaSyCXqXv-YG802yzBwPItL4MLdP1LtfwYdrc",
     authDomain: "miraj-cinemas-seat-tracker.firebaseapp.com",
@@ -14,9 +14,9 @@ firebase.initializeApp({
 
 const messaging = firebase.messaging();
 
-// Handle background notifications
+// Background notification handler
 messaging.setBackgroundMessageHandler(function(payload) {
-  console.log("Message received:", payload);
+  console.log("Background message:", payload);
 
   return self.registration.showNotification(
     payload.notification.title,
