@@ -17,7 +17,7 @@ let trackers = [];
 // Each item: { token, movieId, row }
 
 // 🔑 Firebase Admin Setup
-const serviceAccount = require("./serviceAccount.json");
+const serviceAccount = require("/etc/secrets/serviceAccount.json");
 
 admin.initializeApp({
   credential: admin.credential.cert(serviceAccount)
