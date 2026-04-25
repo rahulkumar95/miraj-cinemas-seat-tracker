@@ -45,11 +45,6 @@ app.post("/track", (req, res) => {
 // ⏱ Prevent overlapping runs
 let isRunning = false;
 
-const dateStr = new Date(rawTime).toLocaleDateString("en-IN", {
-  day: "numeric",
-  month: "short"
-});
-
 // ⏰ Run every 30 seconds
 cron.schedule("*/1 * * * *", async () => {
   if (isRunning) return;
@@ -77,6 +72,11 @@ cron.schedule("*/1 * * * *", async () => {
           minute: "2-digit"
         })
         : "Time";
+
+      const dateStr = new Date(rawTime).toLocaleDateString("en-IN", {
+        day: "numeric",
+        month: "short"
+      });
 
       const areas =
         data?.data?.seatLayout?.result?.seats?.area;
