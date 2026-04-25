@@ -39,7 +39,7 @@ async function start() {
 
     // Register service worker (IMPORTANT)
     const registration = await navigator.serviceWorker.register(
-      "/firebase-messaging-sw.js"
+      "firebase-messaging-sw.js"
     );
 
     // Get token
