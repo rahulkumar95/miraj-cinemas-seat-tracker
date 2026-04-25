@@ -129,8 +129,7 @@ cron.schedule("*/1 * * * *", async () => {
               notification: {
                 channelId: "seat-alerts-v1",
                 sound: "default",
-                tag: `${t.movieId}`, // 🔥 grouping
-                renotify: true
+                tag: `${t.movieId}`   // ✅ grouping still works
               }
             },
             token: t.token
