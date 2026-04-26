@@ -253,14 +253,16 @@ function updateActiveWithStatus(serverData) {
   let list = JSON.parse(localStorage.getItem(TRACK_KEY) || "[]");
 
   list.forEach((t, index) => {
-    const status = serverData.lastStatus[t.sessionId];
+    const current = serverData.currentStatus?.[t.sessionId];
+    const previous = serverData.previousStatus?.[t.sessionId];
 
     const div = document.createElement("div");
 
     div.innerHTML = `
       <div><b>🎬 ${t.movieName}</b></div>
       <div>📅 ${t.date} | ⏰ ${t.time}</div>
-      <div>🪑 ${status?.seatSummary || "No seats now"}</div>
+      <div>🟢 Live: ${current?.seatSummary || "No seats now"}</div>
+      <div>🪑 Last: ${previous?.seatSummary || "No previous data"}</div>
       <button onclick="removeTracking(${index})">❌ Untrack</button>
     `;
 

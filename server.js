@@ -13,8 +13,9 @@ app.use(express.json());
 // 🔥 In-memory store
 let trackers = [];
 
-// 🔥 NEW: store last seat status
-let lastStatus = {};
+// 🔥 NEW: live + previous
+let currentStatus = {};
+let previousStatus = {};
 
 // 🔑 Firebase
 const serviceAccount = require("/etc/secrets/serviceAccount.json");
@@ -28,11 +29,12 @@ app.get("/health", (req, res) => {
   res.send("OK");
 });
 
-// ✅ GET ACTIVE STATUS
+// 📡 STATUS API
 app.get("/status", (req, res) => {
   res.json({
     trackers,
-    lastStatus
+    currentStatus,
+    previousStatus
   });
 });
 
@@ -64,7 +66,8 @@ app.post("/untrack", (req, res) => {
     t => !(t.token === token && t.sessionId === sessionId)
   );
 
-  delete lastStatus[sessionId];
+  delete currentStatus[sessionId];
+  delete previousStatus[sessionId];
 
   console.log("❌ Removed tracking:", sessionId);
   res.send("Tracking removed");
@@ -73,7 +76,7 @@ app.post("/untrack", (req, res) => {
 // ⏱ Prevent overlap
 let isRunning = false;
 
-// ⏰ Check seats
+// ⏰ CRON
 cron.schedule("*/1 * * * *", async () => {
   if (isRunning) return;
   isRunning = true;
@@ -97,7 +100,8 @@ cron.schedule("*/1 * * * *", async () => {
       if (showTime && now > showTime) {
         console.log("⏹️ Auto stopping:", t.sessionId);
         trackers = trackers.filter(x => x.sessionId !== t.sessionId);
-        delete lastStatus[t.sessionId];
+        delete currentStatus[t.sessionId];
+        delete previousStatus[t.sessionId];
         continue;
       }
 
@@ -146,12 +150,15 @@ cron.schedule("*/1 * * * *", async () => {
         }
       }
 
-      let seatSummary = result
+      const seatSummary = result
         .map(r => `${r.row}(${r.seats.length}): ${r.seats.join(",")}`)
         .join(" | ");
 
-      // 🔥 STORE LIVE STATUS
-      lastStatus[t.sessionId] = {
+      // 🔥 MOVE current → previous
+      previousStatus[t.sessionId] = currentStatus[t.sessionId];
+
+      // 🔥 UPDATE current
+      currentStatus[t.sessionId] = {
         movieName,
         dateStr,
         timing,
@@ -180,6 +187,7 @@ cron.schedule("*/1 * * * *", async () => {
 
         console.log("✅ Notified:", movieName);
       }
+
     } catch (err) {
       console.error("Error:", err.message);
     }
