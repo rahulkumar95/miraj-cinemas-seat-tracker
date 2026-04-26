@@ -119,7 +119,7 @@ function loadDates(movieCode) {
 
       loadTimings(movieCode, dateStr);
 
-      // 🔥 SCROLL
+      // 🔥 SCROLL to timings
       document.getElementById("timings").scrollIntoView({ behavior: "smooth" });
     };
 
@@ -164,14 +164,6 @@ async function loadTimings(movieCode, date) {
           btn.classList.add("selected");
 
           selectedSessionId = t.id;
-
-          // 🔥 NEW: Scroll to bottom so Start Tracking button is fully visible
-          setTimeout(() => {
-            window.scrollTo({
-              top: document.body.scrollHeight,
-              behavior: "smooth"
-            });
-          }, 150);
         };
 
         container.appendChild(btn);
@@ -181,6 +173,14 @@ async function loadTimings(movieCode, date) {
 
   if (!foundTiming) {
     alert("⚠️ No shows opened yet");
+  } else {
+    // 🔥 NEW: scroll to bottom after timings load
+    setTimeout(() => {
+      window.scrollTo({
+        top: document.body.scrollHeight,
+        behavior: "smooth"
+      });
+    }, 200);
   }
 }
 
