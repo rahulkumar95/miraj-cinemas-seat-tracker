@@ -102,9 +102,15 @@ function loadDates(movieCode) {
     const d = new Date();
     d.setDate(today.getDate() + i);
 
-    const dateStr = d.toISOString().split("T")[0];
+    // 🔥 Date string in IST (no UTC shift)
+    const dateStr =
+      d.getFullYear() +
+      "-" +
+      String(d.getMonth() + 1).padStart(2, "0") +
+      "-" +
+      String(d.getDate()).padStart(2, "0");
 
-    const formattedDate = new Date(dateStr).toLocaleDateString("en-IN", {
+    const formattedDate = d.toLocaleDateString("en-IN", {
       day: "numeric",
       month: "short",
       timeZone: "Asia/Kolkata"
