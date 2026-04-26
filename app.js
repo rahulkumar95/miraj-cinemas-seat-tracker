@@ -164,6 +164,14 @@ async function loadTimings(movieCode, date) {
           btn.classList.add("selected");
 
           selectedSessionId = t.id;
+
+          // 🔥 NEW: Scroll to bottom so Start Tracking button is fully visible
+          setTimeout(() => {
+            window.scrollTo({
+              top: document.body.scrollHeight,
+              behavior: "smooth"
+            });
+          }, 150);
         };
 
         container.appendChild(btn);
