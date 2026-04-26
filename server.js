@@ -13,6 +13,9 @@ app.use(express.json());
 // 🔥 In-memory store
 let trackers = [];
 
+// 🔥 NEW: store last seat status
+let lastStatus = {};
+
 // 🔑 Firebase
 const serviceAccount = require("/etc/secrets/serviceAccount.json");
 
@@ -25,37 +28,45 @@ app.get("/health", (req, res) => {
   res.send("OK");
 });
 
+// ✅ GET ACTIVE STATUS
+app.get("/status", (req, res) => {
+  res.json({
+    trackers,
+    lastStatus
+  });
+});
+
 // ✅ TRACK
 app.post("/track", (req, res) => {
-  const { token, movieId, area } = req.body;
+  const { token, sessionId, area } = req.body;
 
-  if (!token || !movieId) {
+  if (!token || !sessionId) {
     return res.status(400).send("Missing data");
   }
 
   const exists = trackers.find(
-    t => t.token === token && t.movieId === movieId
+    t => t.token === token && t.sessionId === sessionId
   );
 
   if (!exists) {
-    trackers.push({ token, movieId, area });
+    trackers.push({ token, sessionId, area });
   }
 
-  console.log("✅ Added tracking:", movieId);
-
+  console.log("✅ Added tracking:", sessionId);
   res.send("✅ Tracking started");
 });
 
 // ❌ UNTRACK
 app.post("/untrack", (req, res) => {
-  const { token, movieId } = req.body;
+  const { token, sessionId } = req.body;
 
   trackers = trackers.filter(
-    t => !(t.token === token && t.movieId === movieId)
+    t => !(t.token === token && t.sessionId === sessionId)
   );
 
-  console.log("❌ Removed tracking:", movieId);
+  delete lastStatus[sessionId];
 
+  console.log("❌ Removed tracking:", sessionId);
   res.send("Tracking removed");
 });
 
@@ -67,37 +78,46 @@ cron.schedule("*/1 * * * *", async () => {
   if (isRunning) return;
   isRunning = true;
 
+  const now = new Date();
+
   for (let t of trackers) {
     try {
       const res = await fetch(
-        `https://mirajcinemas.com/api/v1.0/webapp/seat_layout/${t.movieId}/0210`
+        `https://mirajcinemas.com/api/v1.0/webapp/seat_layout/${t.sessionId}/0210`
       );
 
       const data = await res.json();
 
-      const rawTime =
-        data?.data?.sessionDetails?.Session_dtmRealShow;
+      const rawTime = data?.data?.sessionDetails?.Session_dtmRealShow;
+      const movieName = data?.data?.movieDetails?.Film_strTitle || "Movie";
 
-      const movieName =
-        data?.data?.movieDetails?.Film_strTitle || "Movie";
+      const showTime = rawTime ? new Date(rawTime) : null;
+
+      // 🔥 STOP AFTER SHOW START
+      if (showTime && now > showTime) {
+        console.log("⏹️ Auto stopping:", t.sessionId);
+        trackers = trackers.filter(x => x.sessionId !== t.sessionId);
+        delete lastStatus[t.sessionId];
+        continue;
+      }
 
       const timing = rawTime
         ? new Date(rawTime).toLocaleTimeString("en-IN", {
           hour: "2-digit",
-          minute: "2-digit"
+          minute: "2-digit",
+          timeZone: "Asia/Kolkata"
         })
         : "";
 
       const dateStr = rawTime
         ? new Date(rawTime).toLocaleDateString("en-IN", {
           day: "numeric",
-          month: "short"
+          month: "short",
+          timeZone: "Asia/Kolkata"
         })
         : "";
 
-      const areas =
-        data?.data?.seatLayout?.result?.seats?.area;
-
+      const areas = data?.data?.seatLayout?.result?.seats?.area;
       if (!areas) continue;
 
       let result = [];
@@ -119,18 +139,26 @@ cron.schedule("*/1 * * * *", async () => {
             if (seats.length > 0) {
               result.push({
                 row: row.strRowPhyID,
-                seats: seats
+                seats
               });
             }
           }
         }
       }
 
-      if (result.length > 0) {
-        const seatSummary = result
-          .map(r => `${r.row}(${r.seats.length}): ${r.seats.join(",")}`)
-          .join(" | ");
+      let seatSummary = result
+        .map(r => `${r.row}(${r.seats.length}): ${r.seats.join(",")}`)
+        .join(" | ");
 
+      // 🔥 STORE LIVE STATUS
+      lastStatus[t.sessionId] = {
+        movieName,
+        dateStr,
+        timing,
+        seatSummary
+      };
+
+      if (seatSummary) {
         await admin.messaging().send({
           notification: {
             title: `🎬 ${movieName}`,
@@ -141,11 +169,11 @@ cron.schedule("*/1 * * * *", async () => {
             notification: {
               channelId: "seat-alerts-v1",
               sound: "default",
-              tag: `${t.movieId}`
+              tag: `${t.sessionId}`
             }
           },
           data: {
-            tag: `${t.movieId}`   // 👈 for service worker
+            tag: `${t.sessionId}`
           },
           token: t.token
         });

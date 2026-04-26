@@ -29,11 +29,6 @@
     .movie-card {
       text-align: center;
       cursor: pointer;
-      transition: transform 0.2s;
-    }
-
-    .movie-card:hover {
-      transform: scale(1.05);
     }
 
     .movie-card img {
@@ -56,10 +51,6 @@
       cursor: pointer;
     }
 
-    button:hover {
-      background: #0056b3;
-    }
-
     .selected {
       background: green !important;
     }
@@ -78,13 +69,15 @@
   <h2>🎬 Movies</h2>
   <div id="movies"></div>
 
-  <h2>📅 Dates</h2>
+  <h2 id="datesTitle">📅 Dates</h2>
   <div id="dates"></div>
 
   <h2>⏰ Timings</h2>
   <div id="timings"></div>
 
-  <button onclick="startTracking()">Start Tracking</button>
+  <button style="width:100%;padding:15px;font-size:18px" onclick="startTracking()">
+    🚀 Start Tracking
+  </button>
 
   <!-- Firebase -->
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>

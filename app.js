@@ -20,6 +20,16 @@ let selectedSessionId = null;
 // 🔥 LOCAL STORAGE KEY
 const TRACK_KEY = "seat_trackings";
 
+// 🔔 Foreground notification
+messaging.onMessage(payload => {
+  console.log("Foreground message:", payload);
+
+  new Notification(payload.notification.title, {
+    body: payload.notification.body,
+    icon: "icon.png"
+  });
+});
+
 // 🎬 Load Movies
 async function loadMovies() {
   const res = await fetch("https://mirajcinemas.com/api/v1.0/webapp/movies", {
@@ -28,9 +38,7 @@ async function loadMovies() {
       "Content-Type": "application/json",
       "city-id": "4"
     },
-    body: JSON.stringify({
-      topTab: "now_showing"
-    })
+    body: JSON.stringify({ topTab: "now_showing" })
   });
 
   const data = await res.json();
@@ -67,14 +75,15 @@ async function loadMovies() {
       document.getElementById("dates").innerHTML = "";
       document.getElementById("timings").innerHTML = "";
 
-      // 🔥 Load dates for selected movie
+      // 🔥 Update heading
+      document.getElementById("datesTitle").innerText =
+        `📅 Dates (${movie.Film_strTitle})`;
+
       loadDates(movie.Film_strCode);
 
       // 🔥 Smooth scroll (mobile friendly)
       setTimeout(() => {
-        document.getElementById("dates").scrollIntoView({
-          behavior: "smooth"
-        });
+        document.getElementById("dates").scrollIntoView({ behavior: "smooth" });
       }, 200);
     };
 
@@ -84,8 +93,6 @@ async function loadMovies() {
 
 // 📅 Load Dates
 function loadDates(movieCode) {
-  selectedMovie = movieCode;
-
   const container = document.getElementById("dates");
   container.innerHTML = "";
 
@@ -99,7 +106,8 @@ function loadDates(movieCode) {
 
     const formattedDate = new Date(dateStr).toLocaleDateString("en-IN", {
       day: "numeric",
-      month: "short"
+      month: "short",
+      timeZone: "Asia/Kolkata"
     });
 
     const btn = document.createElement("button");
@@ -125,9 +133,7 @@ async function loadTimings(movieCode, date) {
 
   const res = await fetch(
     `https://mirajcinemas.com/api/v1.0/webapp/session/${movieCode}/${date}`,
-    {
-      headers: { "city-id": "4" }
-    }
+    { headers: { "city-id": "4" } }
   );
 
   const data = await res.json();
@@ -146,7 +152,8 @@ async function loadTimings(movieCode, date) {
         const formattedTime = new Date(t.time).toLocaleTimeString("en-IN", {
           hour: "numeric",
           minute: "2-digit",
-          hour12: true
+          hour12: true,
+          timeZone: "Asia/Kolkata"
         });
 
         const btn = document.createElement("button");
@@ -179,10 +186,7 @@ async function startTracking() {
   const permission = await Notification.requestPermission();
   if (permission !== "granted") return;
 
-  const registration = await navigator.serviceWorker.register(
-    "firebase-messaging-sw.js"
-  );
-
+  const registration = await navigator.serviceWorker.register("firebase-messaging-sw.js");
   await navigator.serviceWorker.ready;
 
   const token = await messaging.getToken({
@@ -193,29 +197,20 @@ async function startTracking() {
   // 🔥 Save locally
   let list = JSON.parse(localStorage.getItem(TRACK_KEY) || "[]");
 
-  // 🔥 Get display values
-  const movieName = document.querySelector(".movie-card.selected .movie-title")?.innerText || "Movie";
-
-  const dateText = document.querySelector("#dates .selected")?.innerText || selectedDate;
-
-  const timeText = document.querySelector("#timings .selected")?.innerText || "";
-
   // 🔥 CHECK DUPLICATE
-  const exists = list.find(
-    t =>
-      t.movieId === selectedSessionId &&
-      t.date === dateText &&
-      t.time === timeText
-  );
-
-  if (exists) {
+  if (list.find(t => t.sessionId === selectedSessionId)) {
     alert("⚠️ Already tracking this show");
     return;
   }
 
+  // 🔥 Get display values
+  const movieName = document.querySelector(".movie-card.selected .movie-title")?.innerText || "Movie";
+  const dateText = document.querySelector("#dates .selected")?.innerText || "";
+  const timeText = document.querySelector("#timings .selected")?.innerText || "";
+
   // ✅ ADD ONLY IF NOT EXISTS
   list.push({
-    movieId: selectedSessionId,
+    sessionId: selectedSessionId,
     movieName,
     date: dateText,
     time: timeText
@@ -227,12 +222,10 @@ async function startTracking() {
 
   await fetch("https://miraj-cinemas-seat-tracker.onrender.com/track", {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json"
-    },
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       token,
-      movieId: selectedSessionId,
+      sessionId: selectedSessionId,
       area: "SPECIAL"
     })
   });
@@ -240,26 +233,34 @@ async function startTracking() {
   alert(`✅ Tracking started: ${movieName} (${dateText} ${timeText})`);
 }
 
+// 📡 Fetch live status
+async function fetchStatus() {
+  const res = await fetch("https://miraj-cinemas-seat-tracker.onrender.com/status");
+  const data = await res.json();
+  updateActiveWithStatus(data);
+}
+
 // 📋 Show Active Trackings
 function renderTrackings() {
-  const container = document.getElementById("active");
-  if (!container) return;
+  fetchStatus();
+}
 
+// 🎯 Update UI with live data
+function updateActiveWithStatus(serverData) {
+  const container = document.getElementById("active");
   container.innerHTML = "";
 
   let list = JSON.parse(localStorage.getItem(TRACK_KEY) || "[]");
 
   list.forEach((t, index) => {
-    const div = document.createElement("div");
+    const status = serverData.lastStatus[t.sessionId];
 
-    div.style.marginBottom = "10px";
-    div.style.padding = "10px";
-    div.style.border = "1px solid #ccc";
-    div.style.borderRadius = "8px";
+    const div = document.createElement("div");
 
     div.innerHTML = `
       <div><b>🎬 ${t.movieName}</b></div>
       <div>📅 ${t.date} | ⏰ ${t.time}</div>
+      <div>🪑 ${status?.seatSummary || "No seats now"}</div>
       <button onclick="removeTracking(${index})">❌ Untrack</button>
     `;
 
@@ -267,7 +268,7 @@ function renderTrackings() {
   });
 }
 
-// ❌ Remove tracking
+// ❌ Remove Tracking
 async function removeTracking(index) {
   let list = JSON.parse(localStorage.getItem(TRACK_KEY) || "[]");
 
@@ -284,12 +285,10 @@ async function removeTracking(index) {
   // 🔥 Call backend to stop tracking
   await fetch("https://miraj-cinemas-seat-tracker.onrender.com/untrack", {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json"
-    },
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       token,
-      movieId: item.movieId
+      sessionId: item.sessionId
     })
   });
 
@@ -302,9 +301,10 @@ async function removeTracking(index) {
 
   // ✅ SUCCESS ALERT
   alert(`✅ Untracked: ${item.movieName} (${item.date} ${item.time})`);
-
-
 }
+
+// 🔁 Auto refresh
+setInterval(fetchStatus, 10000);
 
 // 🚀 init
 loadMovies();
