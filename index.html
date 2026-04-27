@@ -29,6 +29,11 @@
     .movie-card {
       text-align: center;
       cursor: pointer;
+      transition: transform 0.2s;
+    }
+
+    .movie-card:hover {
+      transform: scale(1.05);
     }
 
     .movie-card img {
@@ -51,12 +56,23 @@
       cursor: pointer;
     }
 
+    button:hover {
+      background: #0056b3;
+    }
+
     .selected {
       background: green !important;
     }
 
     .movie-card.selected {
       border: 2px solid green;
+    }
+
+    #startBtn {
+      width: 100%;
+      padding: 15px;
+      font-size: 18px;
+      margin-top: 10px;
     }
   </style>
 </head>
@@ -75,15 +91,13 @@
   <h2>⏰ Timings</h2>
   <div id="timings"></div>
 
-  <button style="width:100%;padding:15px;font-size:18px" onclick="startTracking()">
-    🚀 Start Tracking
-  </button>
+  <button id="startBtn" onclick="startTracking()">🚀 Start Tracking</button>
 
   <!-- Firebase -->
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-messaging.js"></script>
 
-  <script src="app.js"></script>
+  <script src="app.js?v=5"></script>
 
 </body>
 

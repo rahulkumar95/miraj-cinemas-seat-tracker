@@ -79,6 +79,7 @@ async function loadMovies() {
       document.getElementById("datesTitle").innerText =
         `📅 Dates (${movie.Film_strTitle})`;
 
+      // 🔥 Load dates for selected movie
       loadDates(movie.Film_strCode);
 
       // 🔥 Smooth scroll (mobile friendly)
@@ -91,7 +92,7 @@ async function loadMovies() {
   });
 }
 
-// 📅 Load Dates
+// 📅 Load Dates (IST FIXED)
 function loadDates(movieCode) {
   const container = document.getElementById("dates");
   container.innerHTML = "";
@@ -102,7 +103,7 @@ function loadDates(movieCode) {
     const d = new Date();
     d.setDate(today.getDate() + i);
 
-    // 🔥 Date string in IST (no UTC shift)
+    // 🔥 FIX: avoid GMT shift
     const dateStr =
       d.getFullYear() +
       "-" +
@@ -123,6 +124,7 @@ function loadDates(movieCode) {
       document.querySelectorAll("#dates button").forEach(b => b.classList.remove("selected"));
       btn.classList.add("selected");
 
+      // 🔥 Load timings
       loadTimings(movieCode, dateStr);
 
       // 🔥 SCROLL to timings
@@ -150,12 +152,23 @@ async function loadTimings(movieCode, date) {
 
   let foundTiming = false;
 
+  // 🔥 CURRENT IST TIME
+  const nowIST = new Date(
+    new Date().toLocaleString("en-US", { timeZone: "Asia/Kolkata" })
+  );
+
   sessions.forEach(s => {
     (s.sessionDetails || []).forEach(detail => {
       (detail.timing || []).forEach(t => {
+
+        const showTime = new Date(t.time);
+
+        // 🔥 FILTER: skip already started shows
+        if (showTime <= nowIST) return;
+
         foundTiming = true;
 
-        const formattedTime = new Date(t.time).toLocaleTimeString("en-IN", {
+        const formattedTime = showTime.toLocaleTimeString("en-IN", {
           hour: "numeric",
           minute: "2-digit",
           hour12: true,
@@ -178,9 +191,9 @@ async function loadTimings(movieCode, date) {
   });
 
   if (!foundTiming) {
-    alert("⚠️ No shows opened yet");
+    alert("⚠️ No upcoming shows available");
   } else {
-    // 🔥 NEW: scroll to bottom after timings load
+    // 🔥 SCROLL TO BOTTOM so Start Tracking button is visible
     setTimeout(() => {
       window.scrollTo({
         top: document.body.scrollHeight,
@@ -211,7 +224,7 @@ async function startTracking() {
   // 🔥 Save locally
   let list = JSON.parse(localStorage.getItem(TRACK_KEY) || "[]");
 
-  // 🔥 CHECK DUPLICATE
+  // 🔥 CHECK DUPLICATE (sessionId based)
   if (list.find(t => t.sessionId === selectedSessionId)) {
     alert("⚠️ Already tracking this show");
     return;
@@ -257,9 +270,14 @@ async function fetchStatus() {
 // 📋 Show Active Trackings
 function renderTrackings() {
   fetchStatus();
+
+  // 🔥 Scroll back to active tracking section
+  setTimeout(() => {
+    document.getElementById("active").scrollIntoView({ behavior: "smooth" });
+  }, 200);
 }
 
-// 🎯 Update UI with live data
+// 🎯 Update UI with live + last data
 function updateActiveWithStatus(serverData) {
   const container = document.getElementById("active");
   container.innerHTML = "";
@@ -271,6 +289,13 @@ function updateActiveWithStatus(serverData) {
     const previous = serverData.previousStatus?.[t.sessionId];
 
     const div = document.createElement("div");
+
+    // 🔥 Card UI
+    div.style.border = "1px solid #ccc";
+    div.style.padding = "10px";
+    div.style.marginBottom = "10px";
+    div.style.borderRadius = "10px";
+    div.style.background = "#f9f9f9";
 
     div.innerHTML = `
       <div><b>🎬 ${t.movieName}</b></div>

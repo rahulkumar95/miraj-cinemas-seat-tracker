@@ -13,9 +13,12 @@ app.use(express.json());
 // 🔥 In-memory store
 let trackers = [];
 
-// 🔥 NEW: live + previous
+// 🔥 status stores
 let currentStatus = {};
 let previousStatus = {};
+
+// 🔒 RUN LOCK
+let isRunning = false;
 
 // 🔑 Firebase
 const serviceAccount = require("/etc/secrets/serviceAccount.json");
@@ -32,7 +35,6 @@ app.get("/health", (req, res) => {
 // 📡 STATUS API
 app.get("/status", (req, res) => {
   res.json({
-    trackers,
     currentStatus,
     previousStatus
   });
@@ -55,10 +57,11 @@ app.post("/track", (req, res) => {
   }
 
   console.log("✅ Added tracking:", sessionId);
+
   res.send("✅ Tracking started");
 });
 
-// ❌ UNTRACK
+// ❌ UNTRACK (WITH DELETE)
 app.post("/untrack", (req, res) => {
   const { token, sessionId } = req.body;
 
@@ -66,134 +69,158 @@ app.post("/untrack", (req, res) => {
     t => !(t.token === token && t.sessionId === sessionId)
   );
 
+  // 🔥 REMOVE STATUS ALSO
   delete currentStatus[sessionId];
   delete previousStatus[sessionId];
 
-  console.log("❌ Removed tracking:", sessionId);
+  console.log("❌ Removed tracking + cleared status:", sessionId);
+
   res.send("Tracking removed");
 });
 
-// ⏱ Prevent overlap
-let isRunning = false;
-
-// ⏰ CRON
+// ⏰ CRON WITH LOCK
 cron.schedule("*/1 * * * *", async () => {
   if (isRunning) return;
   isRunning = true;
 
-  const now = new Date();
+  try {
+    for (let t of trackers) {
 
-  for (let t of trackers) {
-    try {
-      const res = await fetch(
-        `https://mirajcinemas.com/api/v1.0/webapp/seat_layout/${t.sessionId}/0210`
+      // 🔥 CHECK AGAIN (in case removed mid-run)
+      const stillExists = trackers.find(
+        x => x.token === t.token && x.sessionId === t.sessionId
       );
 
-      const data = await res.json();
+      if (!stillExists) continue;
 
-      const rawTime = data?.data?.sessionDetails?.Session_dtmRealShow;
-      const movieName = data?.data?.movieDetails?.Film_strTitle || "Movie";
+      try {
+        const res = await fetch(
+          `https://mirajcinemas.com/api/v1.0/webapp/seat_layout/${t.sessionId}/0210`
+        );
 
-      const showTime = rawTime ? new Date(rawTime) : null;
+        const data = await res.json();
 
-      // 🔥 STOP AFTER SHOW START
-      if (showTime && now > showTime) {
-        console.log("⏹️ Auto stopping:", t.sessionId);
-        trackers = trackers.filter(x => x.sessionId !== t.sessionId);
-        delete currentStatus[t.sessionId];
-        delete previousStatus[t.sessionId];
-        continue;
-      }
+        const rawTime = data?.data?.sessionDetails?.Session_dtmRealShow;
+        const movieName = data?.data?.movieDetails?.Film_strTitle || "Movie";
 
-      const timing = rawTime
-        ? new Date(rawTime).toLocaleTimeString("en-IN", {
+        const showTime = new Date(rawTime);
+
+        // 🔥 IST FORMAT
+        const timing = showTime.toLocaleTimeString("en-IN", {
           hour: "2-digit",
           minute: "2-digit",
+          hour12: true,
           timeZone: "Asia/Kolkata"
-        })
-        : "";
+        });
 
-      const dateStr = rawTime
-        ? new Date(rawTime).toLocaleDateString("en-IN", {
+        const dateStr = showTime.toLocaleDateString("en-IN", {
           day: "numeric",
           month: "short",
           timeZone: "Asia/Kolkata"
-        })
-        : "";
+        });
 
-      const areas = data?.data?.seatLayout?.result?.seats?.area;
-      if (!areas) continue;
+        // 🔥 STOP AFTER SHOW START
+        const nowIST = new Date(
+          new Date().toLocaleString("en-US", { timeZone: "Asia/Kolkata" })
+        );
 
-      let result = [];
+        if (nowIST > showTime) {
+          trackers = trackers.filter(x => x.sessionId !== t.sessionId);
 
-      for (let area of areas) {
-        if (area.strAreaDesc === t.area) {
-          for (let row of area.rows) {
-            let seats = [];
+          delete currentStatus[t.sessionId];
+          delete previousStatus[t.sessionId];
 
-            for (let seat of row.seats) {
-              if (
-                seat.strSeatStatus === "0" &&
-                seat.strSeatNumber !== "0"
-              ) {
-                seats.push(seat.strSeatNumber);
+          console.log("⏹️ Auto stopped:", t.sessionId);
+          continue;
+        }
+
+        const areas = data?.data?.seatLayout?.result?.seats?.area;
+        if (!areas) continue;
+
+        let result = [];
+
+        for (let area of areas) {
+          if (
+            (area.strAreaDesc || "")
+              .toLowerCase()
+              .includes((t.area || "").toLowerCase())
+          ) {
+            for (let row of area.rows) {
+              let seats = [];
+
+              for (let seat of row.seats) {
+                if (
+                  ["0", 0, "A", "AVAILABLE"].includes(seat.strSeatStatus) &&
+                  seat.strSeatNumber &&
+                  seat.strSeatNumber !== "0"
+                ) {
+                  seats.push(seat.strSeatNumber);
+                }
               }
-            }
 
-            if (seats.length > 0) {
-              result.push({
-                row: row.strRowPhyID,
-                seats
-              });
+              if (seats.length > 0) {
+                result.push({
+                  row: row.strRowPhyID,
+                  seats
+                });
+              }
             }
           }
         }
-      }
 
-      const seatSummary = result
-        .map(r => `${r.row}(${r.seats.length}): ${r.seats.join(",")}`)
-        .join(" | ");
+        let seatSummary = "No seats";
 
-      // 🔥 MOVE current → previous
-      previousStatus[t.sessionId] = currentStatus[t.sessionId];
+        if (result.length > 0) {
+          seatSummary = result
+            .map(r => `${r.row}(${r.seats.length}): ${r.seats.join(",")}`)
+            .join(" | ");
+        }
 
-      // 🔥 UPDATE current
-      currentStatus[t.sessionId] = {
-        movieName,
-        dateStr,
-        timing,
-        seatSummary
-      };
+        const prevSummary =
+          currentStatus[t.sessionId]?.seatSummary || "No seats";
 
-      if (seatSummary) {
-        await admin.messaging().send({
-          notification: {
-            title: `🎬 ${movieName}`,
-            body: `${dateStr} ${timing} | ${seatSummary}`
-          },
-          android: {
-            priority: "high",
+        previousStatus[t.sessionId] = currentStatus[t.sessionId];
+
+        currentStatus[t.sessionId] = {
+          movieName,
+          timing,
+          dateStr,
+          seatSummary
+        };
+
+        const hasSeatsNow = result.length > 0;
+
+        // 🔥 ALWAYS NOTIFY WHEN SEATS
+        if (hasSeatsNow) {
+          await admin.messaging().send({
             notification: {
-              channelId: "seat-alerts-v1",
-              sound: "default",
+              title: `🎬 ${movieName}`,
+              body: `${dateStr} ${timing} | ${seatSummary}`
+            },
+            android: {
+              priority: "high",
+              notification: {
+                channelId: "seat-alerts-v1",
+                sound: "default",
+                tag: `${t.sessionId}`
+              }
+            },
+            data: {
               tag: `${t.sessionId}`
-            }
-          },
-          data: {
-            tag: `${t.sessionId}`
-          },
-          token: t.token
-        });
+            },
+            token: t.token
+          });
 
-        console.log("✅ Notified:", movieName);
+          console.log("✅ Notified:", movieName);
+        }
+
+      } catch (err) {
+        console.error("Error:", err.message);
       }
-
-    } catch (err) {
-      console.error("Error:", err.message);
     }
+  } finally {
+    isRunning = false;
   }
-
-  isRunning = false;
 });
 
 // 🚀 Root
