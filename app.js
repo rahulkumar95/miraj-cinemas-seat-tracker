@@ -48,38 +48,26 @@ async function loadMovies() {
     const card = document.createElement("div");
     card.className = "movie-card";
 
-    const img = document.createElement("img");
-    img.src = "https://mirajcinemas.com" + movie.image_path_1;
-
-    const title = document.createElement("div");
-    title.className = "movie-title";
-    title.innerText = movie.Film_strTitle;
-
-    card.appendChild(img);
-    card.appendChild(title);
+    card.innerHTML = `
+      <img src="https://mirajcinemas.com${movie.image_path_1}" />
+      <div class="movie-title">${movie.Film_strTitle}</div>
+    `;
 
     card.onclick = () => {
-      // 🔥 Highlight selected movie
       document.querySelectorAll(".movie-card").forEach(c => c.classList.remove("selected"));
       card.classList.add("selected");
 
-      // 🔥 Reset selections
       selectedMovie = movie.Film_strCode;
-      selectedDate = null;
       selectedSessionId = null;
 
-      // 🔥 Clear UI
       document.getElementById("dates").innerHTML = "";
       document.getElementById("timings").innerHTML = "";
 
-      // 🔥 Update heading
       document.getElementById("datesTitle").innerText =
         `📅 Dates (${movie.Film_strTitle})`;
 
-      // 🔥 Load dates for selected movie
       loadDates(movie.Film_strCode);
 
-      // 🔥 Smooth scroll (mobile friendly)
       setTimeout(() => {
         document.getElementById("dates").scrollIntoView({ behavior: "smooth" });
       }, 200);
@@ -89,7 +77,7 @@ async function loadMovies() {
   });
 }
 
-// 📅 Load Dates (IST FIXED)
+// 📅 Load Dates
 function loadDates(movieCode) {
   const container = document.getElementById("dates");
   container.innerHTML = "";
@@ -100,7 +88,6 @@ function loadDates(movieCode) {
     const d = new Date();
     d.setDate(today.getDate() + i);
 
-    // 🔥 FIX: avoid GMT shift
     const dateStr =
       d.getFullYear() +
       "-" +
@@ -110,8 +97,7 @@ function loadDates(movieCode) {
 
     const formattedDate = d.toLocaleDateString("en-IN", {
       day: "numeric",
-      month: "short",
-      timeZone: "Asia/Kolkata"
+      month: "short"
     });
 
     const btn = document.createElement("button");
@@ -121,10 +107,8 @@ function loadDates(movieCode) {
       document.querySelectorAll("#dates button").forEach(b => b.classList.remove("selected"));
       btn.classList.add("selected");
 
-      // 🔥 Load timings
       loadTimings(movieCode, dateStr);
 
-      // 🔥 SCROLL to timings
       document.getElementById("timings").scrollIntoView({ behavior: "smooth" });
     };
 
@@ -149,27 +133,17 @@ async function loadTimings(movieCode, date) {
 
   let foundTiming = false;
 
-  // 🔥 CURRENT IST TIME
-  const nowIST = new Date(
-    new Date().toLocaleString("en-US", { timeZone: "Asia/Kolkata" })
-  );
-
   sessions.forEach(s => {
     (s.sessionDetails || []).forEach(detail => {
       (detail.timing || []).forEach(t => {
 
-        const showTime = new Date(t.time);
-
-        // 🔥 FILTER: skip already started shows
-        if (showTime <= nowIST) return;
-
         foundTiming = true;
 
-        const formattedTime = showTime.toLocaleTimeString("en-IN", {
+        // ❌ NO TIME CONVERSION HERE
+        const formattedTime = new Date(t.time).toLocaleTimeString("en-IN", {
           hour: "numeric",
           minute: "2-digit",
-          hour12: true,
-          timeZone: "Asia/Kolkata"
+          hour12: true
         });
 
         const btn = document.createElement("button");
@@ -188,9 +162,8 @@ async function loadTimings(movieCode, date) {
   });
 
   if (!foundTiming) {
-    alert("⚠️ No upcoming shows available");
+    alert("⚠️ No shows opened yet");
   } else {
-    // 🔥 SCROLL TO BOTTOM so Start Tracking button is visible
     setTimeout(() => {
       window.scrollTo({
         top: document.body.scrollHeight,
@@ -218,11 +191,6 @@ async function startTracking() {
     serviceWorkerRegistration: registration
   });
 
-  // 🔥 Get display values
-  const movieName = document.querySelector(".movie-card.selected .movie-title")?.innerText || "Movie";
-  const dateText = document.querySelector("#dates .selected")?.innerText || "";
-  const timeText = document.querySelector("#timings .selected")?.innerText || "";
-
   const res = await fetch("https://miraj-cinemas-seat-tracker.onrender.com/track", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -240,17 +208,16 @@ async function startTracking() {
     return;
   }
 
-  alert(`✅ Tracking started: ${movieName} (${dateText} ${timeText})`);
-  // 🔥 Refresh active list
+  alert(`✅ Tracking started: ${data.movieName} (${data.dateStr} ${data.timing})`);
+
   renderTrackings();
 
-  // 🔥 Scroll to active tracking
   setTimeout(() => {
     document.getElementById("active").scrollIntoView({ behavior: "smooth" });
   }, 200);
 }
 
-// 📋 Show Active Trackings
+// 📋 Active Trackings
 async function renderTrackings() {
   const container = document.getElementById("active");
   container.innerHTML = "";
@@ -264,21 +231,13 @@ async function renderTrackings() {
 
   const res = await fetch("https://miraj-cinemas-seat-tracker.onrender.com/my-trackings", {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json"
-    },
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ token })
   });
 
   const data = await res.json();
-  const list = data.trackings || [];
 
-  if (list.length === 0) {
-    container.innerHTML = "<div>No active tracking</div>";
-    return;
-  }
-
-  list.forEach(t => {
+  data.trackings.forEach(t => {
     const div = document.createElement("div");
 
     // 🔥 Card UI
@@ -307,7 +266,6 @@ async function removeTracking(sessionId, movieName, date, time) {
     serviceWorkerRegistration: registration
   });
 
-  // 🔥 Call backend to stop tracking
   await fetch("https://miraj-cinemas-seat-tracker.onrender.com/untrack", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -319,11 +277,10 @@ async function removeTracking(sessionId, movieName, date, time) {
 
   renderTrackings();
 
-  // ✅ SUCCESS ALERT
   alert(`✅ Untracked: ${movieName} (${date} ${time})`);
 }
 
-// 🔁 Auto refresh active tracking
+// 🔁 Auto refresh
 setInterval(renderTrackings, 10000);
 
 // 🚀 init

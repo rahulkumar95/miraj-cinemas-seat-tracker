@@ -13,10 +13,9 @@ app.use(cors({
 app.use(express.json());
 
 // 🔥 In-memory store
-// key = sessionId_token
-let trackers = new Map();
+let trackers = new Map(); // key = sessionId_token
 
-// 🔥 Firebase
+// 🔑 Firebase
 const serviceAccount = require("/etc/secrets/serviceAccount.json");
 
 admin.initializeApp({
@@ -28,8 +27,55 @@ app.get("/health", (req, res) => {
   res.send("OK");
 });
 
+// 🔥 COMMON FUNCTION (single source of truth for IST)
+async function getShowDetails(sessionId) {
+  let movieName = "";
+  let dateStr = "";
+  let timing = "";
+  let showTime = null;
+
+  try {
+    const res = await fetch(
+      `https://mirajcinemas.com/api/v1.0/webapp/seat_layout/${sessionId}/0210`
+    );
+
+    const data = await res.json();
+
+    const rawTime =
+      data?.data?.sessionDetails?.Session_dtmRealShow;
+
+    movieName =
+      data?.data?.movieDetails?.Film_strTitle || "Movie";
+
+    if (rawTime) {
+      // 🔥 FIX: FORCE IST
+      const iso = rawTime.replace(" ", "T") + "+05:30";
+      const d = new Date(iso);
+
+      showTime = d;
+
+      timing = d.toLocaleTimeString("en-IN", {
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: true
+      });
+
+      dateStr = d.toLocaleDateString("en-IN", {
+        day: "numeric",
+        month: "short"
+      });
+    }
+
+  } catch (err) {
+    console.log("⚠️ Failed fetching show details:", err.message);
+  }
+
+  return { movieName, dateStr, timing, showTime };
+}
+
+
 // ✅ TRACK
-app.post("/track", (req, res) => {
+app.post("/track", async (req, res) => {
   const { token, sessionId, area } = req.body;
 
   if (!token || !sessionId) {
@@ -47,18 +93,27 @@ app.post("/track", (req, res) => {
     });
   }
 
+  // 🔥 USE COMMON FUNCTION
+  const { movieName, dateStr, timing } =
+    await getShowDetails(sessionId);
+
   trackers.set(key, {
     token,
     sessionId,
     area,
-    movieName: "",
-    dateStr: "",
-    timing: ""
+    movieName,
+    dateStr,
+    timing
   });
 
   console.log("✅ Added tracking:", key);
 
-  res.json({ message: "✅ Tracking Started" });
+  res.json({
+    message: "✅ Tracking Started",
+    movieName,
+    dateStr,
+    timing
+  });
 });
 
 // ❌ UNTRACK
@@ -69,12 +124,12 @@ app.post("/untrack", (req, res) => {
 
   trackers.delete(key);
 
-  console.log("❌ Removed tracking:", key);
+  console.log("❌ Removed Tracking:", key);
 
   res.json({ message: "✅ Tracking Removed" });
 });
 
-// 📋 SINGLE SOURCE API (FULL DATA)
+// 📋 SINGLE SOURCE API
 app.post("/my-trackings", (req, res) => {
   const { token } = req.body;
 
@@ -92,15 +147,15 @@ app.post("/my-trackings", (req, res) => {
 // ⏱ Prevent overlap
 let isRunning = false;
 
-// ⏰ CRON
+// ⏰ CRON (updates + notifications)
 cron.schedule("*/1 * * * *", async () => {
   if (isRunning) return;
   isRunning = true;
 
   try {
-    // 🔥 Group by session
     const sessionMap = {};
 
+    // 🔥 Group by session
     for (let t of trackers.values()) {
       if (!sessionMap[t.sessionId]) {
         sessionMap[t.sessionId] = [];
@@ -111,6 +166,36 @@ cron.schedule("*/1 * * * *", async () => {
     for (let sessionId in sessionMap) {
       const users = sessionMap[sessionId];
 
+      // 🔥 Get show data
+      const { movieName, dateStr, timing, showTime } =
+        await getShowDetails(sessionId);
+
+      // 🔥 UPDATE TRACKER META
+      for (let t of users) {
+        t.movieName = movieName;
+        t.dateStr = dateStr;
+        t.timing = timing;
+      }
+
+      // 🔥 STOP AFTER SHOW START
+      const nowIST = new Date(
+        new Date().toLocaleString("en-US", {
+          timeZone: "Asia/Kolkata"
+        })
+      );
+
+      if (showTime && showTime <= nowIST) {
+        console.log("🛑 Removing started show:", sessionId);
+
+        for (let t of users) {
+          const key = `${t.sessionId}_${t.token}`;
+          trackers.delete(key);
+        }
+
+        continue;
+      }
+
+      // 🔥 SEAT LOGIC
       try {
         const res = await fetch(
           `https://mirajcinemas.com/api/v1.0/webapp/seat_layout/${sessionId}/0210`
@@ -118,62 +203,6 @@ cron.schedule("*/1 * * * *", async () => {
 
         const data = await res.json();
 
-        // 🔥 Extract show details
-        const rawTime =
-          data?.data?.sessionDetails?.Session_dtmRealShow;
-
-        const movieName =
-          data?.data?.movieDetails?.Film_strTitle || "Movie";
-
-        // 🔥 IST Time
-        let timing = "";
-        let dateStr = "";
-        let showTime = null;
-
-        if (rawTime) {
-          const iso = rawTime.replace(" ", "T") + "+05:30";
-          const d = new Date(iso);
-
-          showTime = d;
-
-          timing = d.toLocaleTimeString("en-IN", {
-            hour: "2-digit",
-            minute: "2-digit",
-            hour12: true
-          });
-
-          dateStr = d.toLocaleDateString("en-IN", {
-            day: "numeric",
-            month: "short"
-          });
-        }
-
-        // 🔥 UPDATE TRACKER META
-        for (let t of users) {
-          t.movieName = movieName;
-          t.dateStr = dateStr;
-          t.timing = timing;
-        }
-
-        // 🔥 STOP AFTER SHOW START
-        const nowIST = new Date(
-          new Date().toLocaleString("en-US", {
-            timeZone: "Asia/Kolkata"
-          })
-        );
-
-        if (showTime && showTime <= nowIST) {
-          console.log("🛑 Show started, removing:", sessionId);
-
-          for (let t of users) {
-            const key = `${t.sessionId}_${t.token}`;
-            trackers.delete(key);
-          }
-
-          continue;
-        }
-
-        // 🔥 SEAT LOGIC
         const areas =
           data?.data?.seatLayout?.result?.seats?.area;
 
