@@ -17,9 +17,6 @@ let selectedMovie = null;
 let selectedDate = null;
 let selectedSessionId = null;
 
-// 🔥 LOCAL STORAGE KEY
-const TRACK_KEY = "seat_trackings";
-
 // 🔔 Foreground notification
 messaging.onMessage(payload => {
   console.log("Foreground message:", payload);
@@ -221,33 +218,12 @@ async function startTracking() {
     serviceWorkerRegistration: registration
   });
 
-  // 🔥 Save locally
-  let list = JSON.parse(localStorage.getItem(TRACK_KEY) || "[]");
-
-  // 🔥 CHECK DUPLICATE (sessionId based)
-  if (list.find(t => t.sessionId === selectedSessionId)) {
-    alert("⚠️ Already tracking this show");
-    return;
-  }
-
   // 🔥 Get display values
   const movieName = document.querySelector(".movie-card.selected .movie-title")?.innerText || "Movie";
   const dateText = document.querySelector("#dates .selected")?.innerText || "";
   const timeText = document.querySelector("#timings .selected")?.innerText || "";
 
-  // ✅ ADD ONLY IF NOT EXISTS
-  list.push({
-    sessionId: selectedSessionId,
-    movieName,
-    date: dateText,
-    time: timeText
-  });
-
-  localStorage.setItem(TRACK_KEY, JSON.stringify(list));
-
-  renderTrackings();
-
-  await fetch("https://miraj-cinemas-seat-tracker.onrender.com/track", {
+  const res = await fetch("https://miraj-cinemas-seat-tracker.onrender.com/track", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
@@ -257,37 +233,57 @@ async function startTracking() {
     })
   });
 
-  alert(`✅ Tracking started: ${movieName} (${dateText} ${timeText})`);
-}
-
-// 📡 Fetch live status
-async function fetchStatus() {
-  const res = await fetch("https://miraj-cinemas-seat-tracker.onrender.com/status");
   const data = await res.json();
-  updateActiveWithStatus(data);
-}
 
-// 📋 Show Active Trackings
-function renderTrackings() {
-  fetchStatus();
+  if (!res.ok) {
+    alert(data.message); // 🔥 show exact backend message
+    return;
+  }
 
-  // 🔥 Scroll back to active tracking section
+  alert(`✅ Tracking started: ${movieName} (${dateText} ${timeText})`);
+  // 🔥 Refresh active list
+  renderTrackings();
+
+  // 🔥 Scroll to active tracking
   setTimeout(() => {
     document.getElementById("active").scrollIntoView({ behavior: "smooth" });
   }, 200);
 }
 
-// 🎯 Update UI with live + last data
-function updateActiveWithStatus(serverData) {
+// 📋 Fetch my trackings from backend
+async function getMyTrackings() {
+  const registration = await navigator.serviceWorker.ready;
+
+  const token = await messaging.getToken({
+    vapidKey: "BJdiJWaKqtqkqJXywj1rGC9PQ4QoZbzwsuNsUUGjGAPR3SQF6TqZrIPIDIInTEUJPvSxdaWBCKLvHBpU2gmuZFM",
+    serviceWorkerRegistration: registration
+  });
+
+  const res = await fetch("https://miraj-cinemas-seat-tracker.onrender.com/my-trackings", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({ token })
+  });
+
+  const data = await res.json();
+  return data.trackings || [];
+}
+
+// 📋 Show Active Trackings (backend driven)
+async function renderTrackings() {
   const container = document.getElementById("active");
   container.innerHTML = "";
 
-  let list = JSON.parse(localStorage.getItem(TRACK_KEY) || "[]");
+  const list = await getMyTrackings();
 
-  list.forEach((t, index) => {
-    const current = serverData.currentStatus?.[t.sessionId];
-    const previous = serverData.previousStatus?.[t.sessionId];
+  if (list.length === 0) {
+    container.innerHTML = "<div>No active tracking</div>";
+    return;
+  }
 
+  list.forEach(t => {
     const div = document.createElement("div");
 
     // 🔥 Card UI
@@ -300,9 +296,7 @@ function updateActiveWithStatus(serverData) {
     div.innerHTML = `
       <div><b>🎬 ${t.movieName}</b></div>
       <div>📅 ${t.date} | ⏰ ${t.time}</div>
-      <div>🟢 Live: ${current?.seatSummary || "No seats now"}</div>
-      <div>🪑 Last: ${previous?.seatSummary || "No previous data"}</div>
-      <button onclick="removeTracking(${index})">❌ Untrack</button>
+      <button onclick="removeTracking('${t.sessionId}')">❌ Untrack</button>
     `;
 
     container.appendChild(div);
@@ -310,12 +304,7 @@ function updateActiveWithStatus(serverData) {
 }
 
 // ❌ Remove Tracking
-async function removeTracking(index) {
-  let list = JSON.parse(localStorage.getItem(TRACK_KEY) || "[]");
-
-  const item = list[index];
-
-  // 🔥 Get token
+async function removeTracking(sessionId) {
   const registration = await navigator.serviceWorker.ready;
 
   const token = await messaging.getToken({
@@ -329,14 +318,9 @@ async function removeTracking(index) {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       token,
-      sessionId: item.sessionId
+      sessionId
     })
   });
-
-  // 🔥 Remove locally
-  list.splice(index, 1);
-
-  localStorage.setItem(TRACK_KEY, JSON.stringify(list));
 
   renderTrackings();
 
@@ -344,8 +328,8 @@ async function removeTracking(index) {
   alert(`✅ Untracked: ${item.movieName} (${item.date} ${item.time})`);
 }
 
-// 🔁 Auto refresh
-setInterval(fetchStatus, 10000);
+// 🔁 Auto refresh active tracking
+setInterval(renderTrackings, 10000);
 
 // 🚀 init
 loadMovies();

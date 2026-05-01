@@ -31,15 +31,10 @@ messaging.setBackgroundMessageHandler(function (payload) {
   return self.registration.showNotification(title, {
     body: body,
     icon: "icon.png",
-    sound: "default", // 🔥 important
-
-    // 🔥 ANDROID + WEB COMPATIBLE
-    tag: tag,                 // grouping
-    renotify: true,           // 🔥 re-alert on update
+    tag: tag,
+    renotify: true,
     vibrate: [200, 100, 200],
     requireInteraction: true,
-
-    // 🔥 Android hint (not always respected in PWA)
-    silent: false
+    // data: { url: "/dashboard" }   // Good for handling clicks later
   });
 });
