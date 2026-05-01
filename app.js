@@ -236,7 +236,7 @@ async function startTracking() {
   const data = await res.json();
 
   if (!res.ok) {
-    alert(data.message); // 🔥 show exact backend message
+    alert(data.message);
     return;
   }
 
@@ -250,8 +250,11 @@ async function startTracking() {
   }, 200);
 }
 
-// 📋 Fetch my trackings from backend
-async function getMyTrackings() {
+// 📋 Show Active Trackings
+async function renderTrackings() {
+  const container = document.getElementById("active");
+  container.innerHTML = "";
+
   const registration = await navigator.serviceWorker.ready;
 
   const token = await messaging.getToken({
@@ -268,15 +271,7 @@ async function getMyTrackings() {
   });
 
   const data = await res.json();
-  return data.trackings || [];
-}
-
-// 📋 Show Active Trackings (backend driven)
-async function renderTrackings() {
-  const container = document.getElementById("active");
-  container.innerHTML = "";
-
-  const list = await getMyTrackings();
+  const list = data.trackings || [];
 
   if (list.length === 0) {
     container.innerHTML = "<div>No active tracking</div>";
@@ -295,8 +290,8 @@ async function renderTrackings() {
 
     div.innerHTML = `
       <div><b>🎬 ${t.movieName}</b></div>
-      <div>📅 ${t.date} | ⏰ ${t.time}</div>
-      <button onclick="removeTracking('${t.sessionId}')">❌ Untrack</button>
+      <div>📅 ${t.dateStr} | ⏰ ${t.timing}</div>
+      <button onclick="removeTracking('${t.sessionId}', '${t.movieName}', '${t.dateStr}', '${t.timing}')">❌ Untrack</button>
     `;
 
     container.appendChild(div);
@@ -304,7 +299,7 @@ async function renderTrackings() {
 }
 
 // ❌ Remove Tracking
-async function removeTracking(sessionId) {
+async function removeTracking(sessionId, movieName, date, time) {
   const registration = await navigator.serviceWorker.ready;
 
   const token = await messaging.getToken({
@@ -325,7 +320,7 @@ async function removeTracking(sessionId) {
   renderTrackings();
 
   // ✅ SUCCESS ALERT
-  alert(`✅ Untracked: ${item.movieName} (${item.date} ${item.time})`);
+  alert(`✅ Untracked: ${movieName} (${date} ${time})`);
 }
 
 // 🔁 Auto refresh active tracking

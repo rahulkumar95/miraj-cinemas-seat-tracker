@@ -33,10 +33,7 @@ app.post("/track", (req, res) => {
   const { token, sessionId, area } = req.body;
 
   if (!token || !sessionId) {
-    return res.status(400).json({
-      success: false,
-      message: "Missing data"
-    });
+    return res.status(400).json({ message: "Missing data" });
   }
 
   const key = `${sessionId}_${token}`;
@@ -46,19 +43,22 @@ app.post("/track", (req, res) => {
     console.log("⚠️ Duplicate attempt:", key);
 
     return res.status(409).json({
-      success: false,
       message: "⚠️ Already tracking this show"
     });
   }
 
-  trackers.set(key, { token, sessionId, area });
+  trackers.set(key, {
+    token,
+    sessionId,
+    area,
+    movieName: "",
+    dateStr: "",
+    timing: ""
+  });
 
   console.log("✅ Added tracking:", key);
 
-  res.json({
-    success: true,
-    message: "✅ Tracking started"
-  });
+  res.json({ message: "✅ Tracking Started" });
 });
 
 // ❌ UNTRACK
@@ -71,14 +71,14 @@ app.post("/untrack", (req, res) => {
 
   console.log("❌ Removed tracking:", key);
 
-  res.send("Tracking removed");
+  res.json({ message: "✅ Tracking Removed" });
 });
 
-// 📋 GET TRACKINGS FOR USER
+// 📋 SINGLE SOURCE API (FULL DATA)
 app.post("/my-trackings", (req, res) => {
   const { token } = req.body;
 
-  let list = [];
+  const list = [];
 
   for (let t of trackers.values()) {
     if (t.token === token) {
@@ -89,16 +89,16 @@ app.post("/my-trackings", (req, res) => {
   res.json({ trackings: list });
 });
 
-// ⏱ Prevent overlap (IMPORTANT)
+// ⏱ Prevent overlap
 let isRunning = false;
 
-// ⏰ Check seats (OPTIMIZED)
+// ⏰ CRON
 cron.schedule("*/1 * * * *", async () => {
   if (isRunning) return;
   isRunning = true;
 
   try {
-    // 🔥 STEP 1: Group trackers by sessionId (avoid repeated API calls)
+    // 🔥 Group by session
     const sessionMap = {};
 
     for (let t of trackers.values()) {
@@ -108,7 +108,6 @@ cron.schedule("*/1 * * * *", async () => {
       sessionMap[t.sessionId].push(t);
     }
 
-    // 🔥 STEP 2: Process each session only once
     for (let sessionId in sessionMap) {
       const users = sessionMap[sessionId];
 
@@ -126,31 +125,44 @@ cron.schedule("*/1 * * * *", async () => {
         const movieName =
           data?.data?.movieDetails?.Film_strTitle || "Movie";
 
-        const timing = rawTime
-          ? new Date(rawTime).toLocaleTimeString("en-IN", {
+        // 🔥 IST Time
+        let timing = "";
+        let dateStr = "";
+        let showTime = null;
+
+        if (rawTime) {
+          const iso = rawTime.replace(" ", "T") + "+05:30";
+          const d = new Date(iso);
+
+          showTime = d;
+
+          timing = d.toLocaleTimeString("en-IN", {
             hour: "2-digit",
             minute: "2-digit",
-            timeZone: "Asia/Kolkata"
-          })
-          : "";
+            hour12: true
+          });
 
-        const dateStr = rawTime
-          ? new Date(rawTime).toLocaleDateString("en-IN", {
+          dateStr = d.toLocaleDateString("en-IN", {
             day: "numeric",
-            month: "short",
-            timeZone: "Asia/Kolkata"
-          })
-          : "";
+            month: "short"
+          });
+        }
 
-        // 🔥 CURRENT IST TIME
+        // 🔥 UPDATE TRACKER META
+        for (let t of users) {
+          t.movieName = movieName;
+          t.dateStr = dateStr;
+          t.timing = timing;
+        }
+
+        // 🔥 STOP AFTER SHOW START
         const nowIST = new Date(
           new Date().toLocaleString("en-US", {
             timeZone: "Asia/Kolkata"
           })
         );
 
-        // 🔥 STOP TRACKING IF SHOW STARTED
-        if (rawTime && new Date(rawTime) <= nowIST) {
+        if (showTime && showTime <= nowIST) {
           console.log("🛑 Show started, removing:", sessionId);
 
           for (let t of users) {
@@ -161,7 +173,7 @@ cron.schedule("*/1 * * * *", async () => {
           continue;
         }
 
-        // 🔥 Seat extraction (UNCHANGED LOGIC)
+        // 🔥 SEAT LOGIC
         const areas =
           data?.data?.seatLayout?.result?.seats?.area;
 
