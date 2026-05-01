@@ -68,11 +68,17 @@
       border: 2px solid green;
     }
 
-    #startBtn {
+    #trackBtn {
+      margin: 10px 5px;
+      padding: 14px;
       width: 100%;
-      padding: 15px;
-      font-size: 18px;
-      margin-top: 10px;
+      font-size: 16px;
+      border-radius: 8px;
+    }
+
+    #trackBtn:disabled {
+      background: #ccc;
+      cursor: not-allowed;
     }
   </style>
 </head>
@@ -91,7 +97,7 @@
   <h2>⏰ Timings</h2>
   <div id="timings"></div>
 
-  <button id="startBtn" onclick="startTracking()">🚀 Start Tracking</button>
+  <button id="trackBtn" onclick="startTracking()" disabled>🚀 Start Tracking</button>
 
   <!-- Firebase -->
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>

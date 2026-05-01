@@ -1,0 +1,378 @@
+{
+    "status": true,
+    "apiVersion": "v1.0",
+    "statusCode": 200,
+    "data": {
+        "sessionDetails": {
+            "Session_lngSessionId": 45053,
+            "PGroup_strCode": "0039",
+            "Session_dtmRealShow": "2026-04-25 12:30:00.000",
+            "Cinema_strLicenseName": "Miraj Cinemas (City Pulse)",
+            "Cinema_strName": "SRK Miraj Cinemas: Coimbatore",
+            "Cinema_strID": "0210",
+            "Screen_bytNum": 3,
+            "Film_strCode": "HO00011489",
+            "Screen_strName": "SCREEN 3",
+            "reversed": true,
+            "cinema_has_chefs_corner": true,
+            "cinema_qr_enable": null,
+            "cinema_latitude": null,
+            "cinema_longitude": null,
+            "cinema_meter_range": null
+        },
+        "movieDetails": {
+            "Film_strCode": "HO00011489",
+            "Film_strTitle": "Amarkalam (Re-Release) (Tamil)",
+            "format": "1",
+            "image_path_1": "/uploads/1776938315079_5jpg.jpg",
+            "youtube_url": "https://youtu.be/3gTBjdJb8xs"
+        },
+        "showTimings": [
+            {
+                "Session_dtmRealShow": "2026-04-25 12:30:00.000",
+                "Session_lngSessionId": 45053
+            },
+            {
+                "Session_dtmRealShow": "2026-04-25 18:35:00.000",
+                "Session_lngSessionId": 45054
+            }
+        ],
+        "seatLayout": {
+            "error": null,
+            "result": {
+                "status": true,
+                "cola": {
+                    "intVersion": 1,
+                    "intException": 0,
+                    "strException": null,
+                    "Count": 2
+                },
+                "seats": {
+                    "Success": false,
+                    "CinemaId": null,
+                    "TempTransId": null,
+                    "SessionId": 0,
+                    "ScreenOnTop": false,
+                    "ExtendedProperty": false,
+                    "intException": 0,
+                    "strException": null,
+                    "area": [
+                        {
+                            "strAreaDesc": "SPECIAL",
+                            "strAreaNum": "1",
+                            "strAreaCode": "0000000005",
+                            "strHasCurrentOrder": "False",
+                            "rows": [
+                                {
+                                    "intGridRowID": "2",
+                                    "strRowPhyID": "P",
+                                    "seats": [
+                                        {
+                                            "strGridSeatNum": "1",
+                                            "strSeatNumber": "0",
+                                            "strSeatStatus": "1"
+                                        },
+                                        {
+                                            "strGridSeatNum": "2",
+                                            "strSeatNumber": "2",
+                                            "strSeatStatus": "1"
+                                        },
+                                        {
+                                            "strGridSeatNum": "3",
+                                            "strSeatNumber": "3",
+                                            "strSeatStatus": "1"
+                                        },
+                                        {
+                                            "strGridSeatNum": "4",
+                                            "strSeatNumber": "4",
+                                            "strSeatStatus": "1"
+                                        },
+                                        {
+                                            "strGridSeatNum": "5",
+                                            "strSeatNumber": "5",
+                                            "strSeatStatus": "1"
+                                        },
+                                        {
+                                            "strGridSeatNum": "6",
+                                            "strSeatNumber": "6",
+                                            "strSeatStatus": "1"
+                                        },
+                                        {
+                                            "strGridSeatNum": "7",
+                                            "strSeatNumber": "7",
+                                            "strSeatStatus": "1"
+                                        },
+                                        {
+                                            "strGridSeatNum": "8",
+                                            "strSeatNumber": "8",
+                                            "strSeatStatus": "1"
+                                        },
+                                        {
+                                            "strGridSeatNum": "9",
+                                            "strSeatNumber": "9",
+                                            "strSeatStatus": "1"
+                                        },
+                                        {
+                                            "strGridSeatNum": "10",
+                                            "strSeatNumber": "10",
+                                            "strSeatStatus": "1"
+                                        },
+                                        {
+                                            "strSeatStatus": "10",
+                                            "strGridSeatNum": 10,
+                                            "strSeatNumber": ""
+                                        },
+                                        {
+                                            "strSeatStatus": "10",
+                                            "strGridSeatNum": 11,
+                                            "strSeatNumber": ""
+                                        },
+                                        {
+                                            "strSeatStatus": "10",
+                                            "strGridSeatNum": 12,
+                                            "strSeatNumber": ""
+                                        },
+                                        {
+                                            "strGridSeatNum": "14",
+                                            "strSeatNumber": "11",
+                                            "strSeatStatus": "1"
+                                        },
+                                        {
+                                            "strGridSeatNum": "15",
+                                            "strSeatNumber": "12",
+                                            "strSeatStatus": "1"
+                                        },
+                                        {
+                                            "strGridSeatNum": "16",
+                                            "strSeatNumber": "13",
+                                            "strSeatStatus": "1"
+                                        },
+                                        {
+                                            "strGridSeatNum": "17",
+                                            "strSeatNumber": "14",
+                                            "strSeatStatus": "1"
+                                        },
+                                        {
+                                            "strGridSeatNum": "18",
+                                            "strSeatNumber": "15",
+                                            "strSeatStatus": "1"
+                                        },
+                                        {
+                                            "strGridSeatNum": "19",
+                                            "strSeatNumber": "16",
+                                            "strSeatStatus": "1"
+                                        },
+                                        {
+                                            "strGridSeatNum": "20",
+                                            "strSeatNumber": "17",
+                                            "strSeatStatus": "1"
+                                        },
+                                        {
+                                            "strGridSeatNum": "21",
+                                            "strSeatNumber": "18",
+                                            "strSeatStatus": "1"
+                                        },
+                                        {
+                                            "strGridSeatNum": "22",
+                                            "strSeatNumber": "19",
+                                            "strSeatStatus": "1"
+                                        },
+                                        {
+                                            "strGridSeatNum": "23",
+                                            "strSeatNumber": "20",
+                                            "strSeatStatus": "1"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "intGridRowID": "2",
+                                    "strRowPhyID": "Q",
+                                    "seats": [
+                                        {
+                                            "strGridSeatNum": "1",
+                                            "strSeatNumber": "0",
+                                            "strSeatStatus": "1"
+                                        },
+                                        {
+                                            "strGridSeatNum": "2",
+                                            "strSeatNumber": "2",
+                                            "strSeatStatus": "1"
+                                        },
+                                        {
+                                            "strGridSeatNum": "3",
+                                            "strSeatNumber": "3",
+                                            "strSeatStatus": "1"
+                                        },
+                                        {
+                                            "strGridSeatNum": "4",
+                                            "strSeatNumber": "4",
+                                            "strSeatStatus": "1"
+                                        },
+                                        {
+                                            "strGridSeatNum": "5",
+                                            "strSeatNumber": "5",
+                                            "strSeatStatus": "1"
+                                        },
+                                        {
+                                            "strGridSeatNum": "6",
+                                            "strSeatNumber": "6",
+                                            "strSeatStatus": "1"
+                                        },
+                                        {
+                                            "strGridSeatNum": "7",
+                                            "strSeatNumber": "7",
+                                            "strSeatStatus": "1"
+                                        },
+                                        {
+                                            "strGridSeatNum": "8",
+                                            "strSeatNumber": "8",
+                                            "strSeatStatus": "1"
+                                        },
+                                        {
+                                            "strGridSeatNum": "9",
+                                            "strSeatNumber": "9",
+                                            "strSeatStatus": "1"
+                                        },
+                                        {
+                                            "strGridSeatNum": "10",
+                                            "strSeatNumber": "10",
+                                            "strSeatStatus": "1"
+                                        },
+                                        {
+                                            "strSeatStatus": "10",
+                                            "strGridSeatNum": 10,
+                                            "strSeatNumber": ""
+                                        },
+                                        {
+                                            "strSeatStatus": "10",
+                                            "strGridSeatNum": 11,
+                                            "strSeatNumber": ""
+                                        },
+                                        {
+                                            "strSeatStatus": "10",
+                                            "strGridSeatNum": 12,
+                                            "strSeatNumber": ""
+                                        },
+                                        {
+                                            "strGridSeatNum": "14",
+                                            "strSeatNumber": "11",
+                                            "strSeatStatus": "1"
+                                        },
+                                        {
+                                            "strGridSeatNum": "15",
+                                            "strSeatNumber": "12",
+                                            "strSeatStatus": "1"
+                                        },
+                                        {
+                                            "strGridSeatNum": "16",
+                                            "strSeatNumber": "13",
+                                            "strSeatStatus": "1"
+                                        },
+                                        {
+                                            "strGridSeatNum": "17",
+                                            "strSeatNumber": "14",
+                                            "strSeatStatus": "1"
+                                        },
+                                        {
+                                            "strGridSeatNum": "18",
+                                            "strSeatNumber": "15",
+                                            "strSeatStatus": "1"
+                                        },
+                                        {
+                                            "strGridSeatNum": "19",
+                                            "strSeatNumber": "16",
+                                            "strSeatStatus": "1"
+                                        },
+                                        {
+                                            "strGridSeatNum": "20",
+                                            "strSeatNumber": "17",
+                                            "strSeatStatus": "1"
+                                        },
+                                        {
+                                            "strGridSeatNum": "21",
+                                            "strSeatNumber": "18",
+                                            "strSeatStatus": "1"
+                                        },
+                                        {
+                                            "strGridSeatNum": "22",
+                                            "strSeatNumber": "19",
+                                            "strSeatStatus": "1"
+                                        },
+                                        {
+                                            "strGridSeatNum": "23",
+                                            "strSeatNumber": "20",
+                                            "strSeatStatus": "1"
+                                        }
+                                    ]
+                                }
+                            ],
+                            "Cinema_strID": "0210",
+                            "PGroup_strCode": "0039",
+                            "TType_strCode": "0013",
+                            "AreaCat_strCode": "0000000005",
+                            "BFee_strCode": null,
+                            "TType_strDescription": "SPECIAL",
+                            "TType_strDescriptionAlt": "",
+                            "Price_intSequence": 3,
+                            "Price_curPrice": 54.35,
+                            "Price_strChildTicket": "N",
+                            "Price_strPackage": "N",
+                            "Price_strComp": "N",
+                            "Price_dtmEffectFrom": "2099-12-31T00:00:00.000Z",
+                            "Price_dtmEffectTill": "2099-12-31T00:00:00.000Z",
+                            "Price_strQuantity": null,
+                            "Price_strAdditionalData": null,
+                            "Price_strSalesChannels": "|IVR|BACKO|BMS|POS2n|POSGR|CAFE1|CAFE2|CALL|FTS|GSALE|WWW|JT|KIOSK|LT|CELL|PDA|PT|POS|POSBK|RSP|TN|TD|POPEX|TABO|CHILA|DINEZ|VIBEN|HD|FNBKI|DOD|BUB|",
+                            "Price_curTax1": 1.29,
+                            "Price_curTax2": 1.29,
+                            "Price_curTax3": 6,
+                            "Price_curTax4": 1.76,
+                            "TType_strHOCode": "SPECIAL",
+                            "Price_dtmStamp": "2026-04-25T06:38:50.227Z"
+                        }
+                    ]
+                },
+                "objBook": {
+                    "curTotal": 0,
+                    "curTicketsTotal": 0,
+                    "curFoodTotal": 0,
+                    "curBookingFee": 0,
+                    "intBookId": 0,
+                    "strBookIdEx": "02100000000000",
+                    "strBookId": "",
+                    "intException": 0,
+                    "intExceptionEx": 0,
+                    "strException": "",
+                    "strSeatInfo": null,
+                    "strTransId": "",
+                    "colA": {
+                        "intVersion": 1,
+                        "intException": 0,
+                        "strException": null,
+                        "Count": 2
+                    },
+                    "lngAuditNumber": 0,
+                    "strPrintData": null,
+                    "intPrintCount": 0,
+                    "curTicketsTax": 0,
+                    "curFoodTax": 0,
+                    "curTicketsTax1": 0,
+                    "curTicketsTax2": 0,
+                    "curTicketsTax3": 0,
+                    "curTicketsTax4": 0,
+                    "curFoodTax1": 0,
+                    "curFoodTax2": 0,
+                    "curFoodTax3": 0,
+                    "curFoodTax4": 0,
+                    "strSplitBookingId": null
+                },
+                "intException": 0,
+                "intExceptionEx": 0
+            },
+            "message": "Success Status Code: 200"
+        }
+    },
+    "error": null,
+    "message": "Data retrieved successfully",
+    "_message": "Custom Message"
+}

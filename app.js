@@ -126,6 +126,12 @@ function loadDates(movieCode) {
 async function loadTimings(movieCode, date) {
   selectedDate = date;
 
+  // 🔥 ALWAYS reset when loading new timings
+  selectedSessionId = null;
+
+  // 🔥 Disable button
+  document.getElementById("trackBtn").disabled = true;
+
   const res = await fetch(
     `https://mirajcinemas.com/api/v1.0/webapp/session/${movieCode}/${date}`,
     { headers: { "city-id": "4" } }
@@ -157,6 +163,9 @@ async function loadTimings(movieCode, date) {
         btn.onclick = () => {
           document.querySelectorAll("#timings button").forEach(b => b.classList.remove("selected"));
           btn.classList.add("selected");
+
+          // 🔥 Enable button when timing selected
+          document.getElementById("trackBtn").disabled = false;
 
           selectedSessionId = t.id;
         };
@@ -217,6 +226,10 @@ async function startTracking() {
   lastAddedSessionId = selectedSessionId;
 
   alert(`✅ Tracking started: ${data.movieName} (${data.dateStr} ${data.timing})`);
+
+  // 🔥 Reset button again
+  document.getElementById("trackBtn").disabled = true;
+  selectedSessionId = null;
 
   // 🔥 slight delay to avoid race
   setTimeout(renderTrackings, 300);
