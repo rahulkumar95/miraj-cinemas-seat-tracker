@@ -6,7 +6,7 @@
         "sessionDetails": {
             "Session_lngSessionId": 45053,
             "PGroup_strCode": "0039",
-            "Session_dtmRealShow": "2026-04-25 12:30:00.000",
+            "Session_dtmRealShow": "2026-05-10 12:30:00.000",
             "Cinema_strLicenseName": "Miraj Cinemas (City Pulse)",
             "Cinema_strName": "SRK Miraj Cinemas: Coimbatore",
             "Cinema_strID": "0210",
@@ -29,11 +29,11 @@
         },
         "showTimings": [
             {
-                "Session_dtmRealShow": "2026-04-25 12:30:00.000",
+                "Session_dtmRealShow": "2026-05-10 12:30:00.000",
                 "Session_lngSessionId": 45053
             },
             {
-                "Session_dtmRealShow": "2026-04-25 18:35:00.000",
+                "Session_dtmRealShow": "2026-05-10 18:35:00.000",
                 "Session_lngSessionId": 45054
             }
         ],
