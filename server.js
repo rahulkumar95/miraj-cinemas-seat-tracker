@@ -244,7 +244,6 @@ cron.schedule("*/1 * * * *", async () => {
           for (let t of users) {
             try {
               await admin.messaging().send({
-                collapseKey: `${sessionId}`,
                 android: {
                   priority: "high",
                   ttl: 1800000, // 30 mins (in milliseconds)
