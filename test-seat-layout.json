@@ -64,48 +64,48 @@
                             "strHasCurrentOrder": "False",
                             "rows": [
                                 {
-                                    "intGridRowID": "2",
+                                    "intGridRowID": "1",
                                     "strRowPhyID": "P",
                                     "seats": [
                                         {
                                             "strGridSeatNum": "1",
                                             "strSeatNumber": "0",
-                                            "strSeatStatus": "1"
+                                            "strSeatStatus": "0"
                                         },
                                         {
                                             "strGridSeatNum": "2",
                                             "strSeatNumber": "2",
-                                            "strSeatStatus": "1"
+                                            "strSeatStatus": "0"
                                         },
                                         {
                                             "strGridSeatNum": "3",
                                             "strSeatNumber": "3",
-                                            "strSeatStatus": "1"
+                                            "strSeatStatus": "0"
                                         },
                                         {
                                             "strGridSeatNum": "4",
                                             "strSeatNumber": "4",
-                                            "strSeatStatus": "1"
+                                            "strSeatStatus": "0"
                                         },
                                         {
                                             "strGridSeatNum": "5",
                                             "strSeatNumber": "5",
-                                            "strSeatStatus": "1"
+                                            "strSeatStatus": "0"
                                         },
                                         {
                                             "strGridSeatNum": "6",
                                             "strSeatNumber": "6",
-                                            "strSeatStatus": "1"
+                                            "strSeatStatus": "0"
                                         },
                                         {
                                             "strGridSeatNum": "7",
                                             "strSeatNumber": "7",
-                                            "strSeatStatus": "1"
+                                            "strSeatStatus": "0"
                                         },
                                         {
                                             "strGridSeatNum": "8",
                                             "strSeatNumber": "8",
-                                            "strSeatStatus": "1"
+                                            "strSeatStatus": "0"
                                         },
                                         {
                                             "strGridSeatNum": "9",
@@ -206,27 +206,27 @@
                                         {
                                             "strGridSeatNum": "4",
                                             "strSeatNumber": "4",
-                                            "strSeatStatus": "1"
+                                            "strSeatStatus": "0"
                                         },
                                         {
                                             "strGridSeatNum": "5",
                                             "strSeatNumber": "5",
-                                            "strSeatStatus": "1"
+                                            "strSeatStatus": "0"
                                         },
                                         {
                                             "strGridSeatNum": "6",
                                             "strSeatNumber": "6",
-                                            "strSeatStatus": "1"
+                                            "strSeatStatus": "0"
                                         },
                                         {
                                             "strGridSeatNum": "7",
                                             "strSeatNumber": "7",
-                                            "strSeatStatus": "1"
+                                            "strSeatStatus": "0"
                                         },
                                         {
                                             "strGridSeatNum": "8",
                                             "strSeatNumber": "8",
-                                            "strSeatStatus": "1"
+                                            "strSeatStatus": "0"
                                         },
                                         {
                                             "strGridSeatNum": "9",

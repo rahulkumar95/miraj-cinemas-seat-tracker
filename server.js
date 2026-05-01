@@ -219,10 +219,8 @@ cron.schedule("*/1 * * * *", async () => {
 
               for (let seat of row.seats) {
                 if (
-                  seat.strSeatStatus === "0" &&
-                  seat.strSeatNumber !== "0"
-                ) {
-                  seats.push(seat.strSeatNumber);
+                  seat.strSeatStatus === "0") {
+                  seats.push(seat.strSeatNumber === "0" ? 1 : seat.strSeatNumber);
                 }
               }
 
