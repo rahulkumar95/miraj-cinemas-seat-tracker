@@ -97,7 +97,15 @@
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-messaging.js"></script>
 
-  <script src="app.js?v=5"></script>
+  <script>
+    (function () {
+      var script = document.createElement('script');
+      // Generate a unique timestamp (e.g., 1714582381)
+      var timestamp = new Date().getTime();
+      script.src = "app.js?v=" + timestamp;
+      document.head.appendChild(script);
+    })();
+  </script>
 
 </body>
 
