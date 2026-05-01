@@ -49,7 +49,7 @@ async function getShowDetails(sessionId) {
 
     if (rawTime) {
       // 🔥 FIX: FORCE IST
-      const iso = rawTime.replace(" ", "T") + "+05:30";
+      const iso = rawTime.replace(" ", "T");
       const d = new Date(iso);
 
       showTime = d;

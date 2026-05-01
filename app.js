@@ -17,6 +17,12 @@ let selectedMovie = null;
 let selectedDate = null;
 let selectedSessionId = null;
 
+// 🔥 Prevent duplicate renders
+let isFetchingTrackings = false;
+
+// 🔥 Track newly added (for highlight)
+let lastAddedSessionId = null;
+
 // 🔔 Foreground notification
 messaging.onMessage(payload => {
   console.log("Foreground message:", payload);
@@ -139,7 +145,6 @@ async function loadTimings(movieCode, date) {
 
         foundTiming = true;
 
-        // ❌ NO TIME CONVERSION HERE
         const formattedTime = new Date(t.time).toLocaleTimeString("en-IN", {
           hour: "numeric",
           minute: "2-digit",
@@ -208,53 +213,91 @@ async function startTracking() {
     return;
   }
 
+  // 🔥 mark for highlight
+  lastAddedSessionId = selectedSessionId;
+
   alert(`✅ Tracking started: ${data.movieName} (${data.dateStr} ${data.timing})`);
 
-  renderTrackings();
+  // 🔥 slight delay to avoid race
+  setTimeout(renderTrackings, 300);
 
+  // 🔥 scroll to active tracking
   setTimeout(() => {
     document.getElementById("active").scrollIntoView({ behavior: "smooth" });
-  }, 200);
+  }, 500);
 }
 
-// 📋 Active Trackings
+// 📋 Active Trackings (with loader + highlight)
 async function renderTrackings() {
+
+  if (isFetchingTrackings) return;
+  isFetchingTrackings = true;
+
   const container = document.getElementById("active");
-  container.innerHTML = "";
 
-  const registration = await navigator.serviceWorker.ready;
+  // 🔥 loading state
+  container.innerHTML = "<div style='opacity:0.6'>⏳ Loading...</div>";
 
-  const token = await messaging.getToken({
-    vapidKey: "BJdiJWaKqtqkqJXywj1rGC9PQ4QoZbzwsuNsUUGjGAPR3SQF6TqZrIPIDIInTEUJPvSxdaWBCKLvHBpU2gmuZFM",
-    serviceWorkerRegistration: registration
-  });
+  try {
+    const registration = await navigator.serviceWorker.ready;
 
-  const res = await fetch("https://miraj-cinemas-seat-tracker.onrender.com/my-trackings", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ token })
-  });
+    const token = await messaging.getToken({
+      vapidKey: "BJdiJWaKqtqkqJXywj1rGC9PQ4QoZbzwsuNsUUGjGAPR3SQF6TqZrIPIDIInTEUJPvSxdaWBCKLvHBpU2gmuZFM",
+      serviceWorkerRegistration: registration
+    });
 
-  const data = await res.json();
+    const res = await fetch("https://miraj-cinemas-seat-tracker.onrender.com/my-trackings", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ token })
+    });
 
-  data.trackings.forEach(t => {
-    const div = document.createElement("div");
+    const data = await res.json();
 
-    // 🔥 Card UI
-    div.style.border = "1px solid #ccc";
-    div.style.padding = "10px";
-    div.style.marginBottom = "10px";
-    div.style.borderRadius = "10px";
-    div.style.background = "#f9f9f9";
+    const list = data.trackings || [];
 
-    div.innerHTML = `
-      <div><b>🎬 ${t.movieName}</b></div>
-      <div>📅 ${t.dateStr} | ⏰ ${t.timing}</div>
-      <button onclick="removeTracking('${t.sessionId}', '${t.movieName}', '${t.dateStr}', '${t.timing}')">❌ Untrack</button>
-    `;
+    container.innerHTML = "";
 
-    container.appendChild(div);
-  });
+    if (list.length === 0) {
+      container.innerHTML = "<div>No active tracking</div>";
+      return;
+    }
+
+    list.forEach(t => {
+      const div = document.createElement("div");
+
+      // 🔥 card style
+      div.style.marginBottom = "10px";
+      div.style.padding = "12px";
+      div.style.border = "1px solid #ccc";
+      div.style.borderRadius = "10px";
+      div.style.background = "#f9f9f9";
+
+      // 🔥 highlight newly added
+      if (t.sessionId == lastAddedSessionId) {
+        div.style.border = "2px solid green";
+        div.style.background = "#eaffea";
+
+        // remove highlight after render
+        setTimeout(() => {
+          lastAddedSessionId = null;
+        }, 1000);
+      }
+
+      div.innerHTML = `
+        <div><b>🎬 ${t.movieName}</b></div>
+        <div>📅 ${t.dateStr} | ⏰ ${t.timing}</div>
+        <button onclick="removeTracking('${t.sessionId}', '${t.movieName}', '${t.dateStr}', '${t.timing}')">❌ Untrack</button>
+      `;
+
+      container.appendChild(div);
+    });
+
+  } catch (err) {
+    console.error("Error loading trackings:", err);
+  }
+
+  isFetchingTrackings = false;
 }
 
 // ❌ Remove Tracking
