@@ -242,8 +242,6 @@ async function startTracking() {
 // 📋 Active Trackings (with loader + highlight)
 async function renderTrackings() {
 
-  console.log("\n\nisFetchingTrackings ",isFetchingTrackings)
-
   if (isFetchingTrackings) return;
   isFetchingTrackings = true;
 
@@ -309,9 +307,9 @@ async function renderTrackings() {
 
   } catch (err) {
     console.error("Error loading trackings:", err);
+  } finally {
+    isFetchingTracking = false;
   }
-
-  isFetchingTrackings = false;
 }
 
 // ❌ Remove Tracking
@@ -334,7 +332,7 @@ async function removeTracking(sessionId, movieName, date, time) {
 
   alert(`✅ Untracked: ${movieName} (${date} ${time})`);
 
-    renderTrackings();
+  renderTrackings();
 }
 
 // 🔁 Auto refresh
