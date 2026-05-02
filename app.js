@@ -17,9 +17,6 @@ let selectedMovie = null;
 let selectedDate = null;
 let selectedSessionId = null;
 
-// 🔥 Prevent duplicate renders
-let isFetchingTrackings = false;
-
 // 🔥 Track newly added (for highlight)
 let lastAddedSessionId = null;
 
@@ -236,82 +233,72 @@ async function startTracking() {
     document.getElementById("active").scrollIntoView({ behavior: "smooth" });
   }, 500);
 
-  await renderTrackings();
+  renderTrackings();
 }
 
 // 📋 Active Trackings (with loader + highlight)
 async function renderTrackings() {
 
-  console.log("\n\nisFetchingTrackings ", isFetchingTrackings)
-
-  if (isFetchingTrackings) return;
-  isFetchingTrackings = true;
 
   const container = document.getElementById("active");
 
   // 🔥 loading state
   container.innerHTML = "<div style='opacity:0.6'>⏳ Loading...</div>";
 
-  try {
-    const registration = await navigator.serviceWorker.ready;
+  const registration = await navigator.serviceWorker.ready;
 
-    const token = await messaging.getToken({
-      vapidKey: "BJdiJWaKqtqkqJXywj1rGC9PQ4QoZbzwsuNsUUGjGAPR3SQF6TqZrIPIDIInTEUJPvSxdaWBCKLvHBpU2gmuZFM",
-      serviceWorkerRegistration: registration
-    });
+  const token = await messaging.getToken({
+    vapidKey: "BJdiJWaKqtqkqJXywj1rGC9PQ4QoZbzwsuNsUUGjGAPR3SQF6TqZrIPIDIInTEUJPvSxdaWBCKLvHBpU2gmuZFM",
+    serviceWorkerRegistration: registration
+  });
 
-    const res = await fetch("https://miraj-cinemas-seat-tracker.onrender.com/my-trackings", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ token })
-    });
+  const res = await fetch("https://miraj-cinemas-seat-tracker.onrender.com/my-trackings", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ token })
+  });
 
-    const data = await res.json();
+  const data = await res.json();
 
-    const list = data.trackings || [];
+  const list = data.trackings || [];
 
-    container.innerHTML = "";
+  container.innerHTML = "";
 
-    if (list.length === 0) {
-      container.innerHTML = "<div>No active tracking</div>";
-      return;
+  if (list.length === 0) {
+    container.innerHTML = "<div>No active tracking</div>";
+    return;
+  }
+
+  list.forEach(t => {
+    const div = document.createElement("div");
+
+    // 🔥 card style
+    div.style.marginBottom = "10px";
+    div.style.padding = "12px";
+    div.style.border = "1px solid #ccc";
+    div.style.borderRadius = "10px";
+    div.style.background = "#f9f9f9";
+
+    // 🔥 highlight newly added
+    if (t.sessionId == lastAddedSessionId) {
+      div.style.border = "2px solid green";
+      div.style.background = "#eaffea";
+
+      // remove highlight after render
+      setTimeout(() => {
+        lastAddedSessionId = null;
+      }, 1000);
     }
 
-    list.forEach(t => {
-      const div = document.createElement("div");
-
-      // 🔥 card style
-      div.style.marginBottom = "10px";
-      div.style.padding = "12px";
-      div.style.border = "1px solid #ccc";
-      div.style.borderRadius = "10px";
-      div.style.background = "#f9f9f9";
-
-      // 🔥 highlight newly added
-      if (t.sessionId == lastAddedSessionId) {
-        div.style.border = "2px solid green";
-        div.style.background = "#eaffea";
-
-        // remove highlight after render
-        setTimeout(() => {
-          lastAddedSessionId = null;
-        }, 1000);
-      }
-
-      div.innerHTML = `
+    div.innerHTML = `
         <div><b>🎬 ${t.movieName}</b></div>
         <div>📅 ${t.dateStr} | ⏰ ${t.timing}</div>
         <button onclick="removeTracking('${t.sessionId}', '${t.movieName}', '${t.dateStr}', '${t.timing}')">❌ Untrack</button>
       `;
 
-      container.appendChild(div);
-    });
+    container.appendChild(div);
+  });
 
-  } catch (err) {
-    console.error("Error loading trackings:", err);
-  } finally {
-    isFetchingTracking = false;
-  }
 }
 
 // ❌ Remove Tracking
@@ -334,7 +321,7 @@ async function removeTracking(sessionId, movieName, date, time) {
 
   alert(`✅ Untracked: ${movieName} (${date} ${time})`);
 
-  await renderTrackings();
+  renderTrackings();
 }
 
 // 🔁 Auto refresh
