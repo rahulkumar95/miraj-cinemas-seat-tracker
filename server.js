@@ -244,7 +244,12 @@ cron.schedule("*/1 * * * *", async () => {
           for (let t of users) {
             try {
               await admin.messaging().send({
+                notification: {
+                  title: `🎬 ${movieName}`,
+                  body: `${dateStr} ${timing} | ${seatSummary}`
+                },
                 android: {
+                  collapseKey: `${sessionId}`,
                   priority: "high",
                   ttl: 1800000, // 30 mins (in milliseconds)
                   notification: {
@@ -252,10 +257,10 @@ cron.schedule("*/1 * * * *", async () => {
                     body: `${dateStr} ${timing} | ${seatSummary}`,
                     icon: "icon.png",
                     color: "#f45342",            // Brand color
+                    sound: "default",
                     tag: `${sessionId}`,
                     channelId: "seat-alerts-v1",
-                    sound: "default",
-                    notificationPriority: "priority_high", // Equivalent to "Heads-up" notification
+                    priority: "priority_high", // Equivalent to "Heads-up" notification
                     defaultSound: true,
                     defaultVibrateTimings: true,
                     sticky: false,           // Set to true if you don't want them to swipe it away
@@ -265,6 +270,7 @@ cron.schedule("*/1 * * * *", async () => {
                 data: {
                   sessionId: String(sessionId),
                   type: "SEAT_UPDATE",
+                  tag: `${sessionId}`,
                 },
                 token: t.token
               });
