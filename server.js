@@ -243,34 +243,47 @@ cron.schedule("*/1 * * * *", async () => {
           // 🔥 Send to all users tracking this session
           for (let t of users) {
             try {
+              // await admin.messaging().send({
+              //   notification: {
+              //     title: `🎬 ${movieName}`,
+              //     body: `${dateStr} ${timing} | ${seatSummary}`
+              //   },
+              //   android: {
+              //     collapseKey: `${sessionId}`,
+              //     priority: "high",
+              //     ttl: 1800000, // 30 mins (in milliseconds)
+              //     notification: {
+              //       title: `🎬 ${movieName}`,
+              //       body: `${dateStr} ${timing} | ${seatSummary}`,
+              //       icon: "icon.png",
+              //       color: "#f45342",            // Brand color
+              //       sound: "default",
+              //       tag: `${sessionId}`,
+              //       channelId: "seat-alerts-v1",
+              //       sticky: false,           // Set to true if you don't want them to swipe it away
+              //       localOnly: false,        // If true, won't mirror to watches/wearables
+              //       priority: "high",        // Equivalent to "Heads-up" notification
+              //       defaultVibrateTimings: true,
+              //       defaultSound: true,
+              //     }
+              //   },
+              //   data: {
+              //     sessionId: String(sessionId),
+              //     type: "SEAT_UPDATE",
+              //     tag: `${sessionId}`,
+              //   },
+              //   token: t.token
+              // });
+
               await admin.messaging().send({
-                notification: {
+                data: {
                   title: `🎬 ${movieName}`,
-                  body: `${dateStr} ${timing} | ${seatSummary}`
+                  body: `${dateStr} ${timing} | ${seatSummary}`,
+                  tag: `${sessionId}`,
+                  sessionId: String(sessionId)
                 },
                 android: {
-                  collapseKey: `${sessionId}`,
-                  priority: "high",
-                  ttl: 1800000, // 30 mins (in milliseconds)
-                  notification: {
-                    title: `🎬 ${movieName}`,
-                    body: `${dateStr} ${timing} | ${seatSummary}`,
-                    icon: "icon.png",
-                    color: "#f45342",            // Brand color
-                    sound: "default",
-                    tag: `${sessionId}`,
-                    channelId: "seat-alerts-v1",
-                    sticky: false,           // Set to true if you don't want them to swipe it away
-                    localOnly: false,        // If true, won't mirror to watches/wearables
-                    priority: "high",        // Equivalent to "Heads-up" notification
-                    defaultVibrateTimings: true,
-                    defaultSound: true,
-                  }
-                },
-                data: {
-                  sessionId: String(sessionId),
-                  type: "SEAT_UPDATE",
-                  tag: `${sessionId}`,
+                  priority: "high"
                 },
                 token: t.token
               });

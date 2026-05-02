@@ -18,23 +18,17 @@ const messaging = firebase.messaging();
 messaging.setBackgroundMessageHandler(function (payload) {
   console.log("Background message:", payload);
 
-  const title = payload.notification?.title || "Seat Alert";
-
-  const body = payload.notification?.body || "";
-
-  // 🔥 get tag from BOTH android + data
-  const tag =
-    payload.data?.tag ||
-    payload.notification?.tag ||
-    "seat-alert";
+  const title = payload.data?.title || "Seat Alert";
+  const body = payload.data?.body || "";
+  const tag = payload.data?.tag || "seat-alert";
 
   return self.registration.showNotification(title, {
     body: body,
     icon: "icon.png",
-    tag: tag,
+    tag: tag, // Now this is the ONLY notification that will show
     renotify: true,
     vibrate: [200, 100, 200],
     requireInteraction: true,
-    // data: { url: "/dashboard" }   // Good for handling clicks later
+    data: payload.data
   });
 });
