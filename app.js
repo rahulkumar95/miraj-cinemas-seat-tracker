@@ -236,7 +236,7 @@ async function startTracking() {
     document.getElementById("active").scrollIntoView({ behavior: "smooth" });
   }, 500);
 
-  renderTrackings();
+  await renderTrackings();
 }
 
 // 📋 Active Trackings (with loader + highlight)
@@ -332,7 +332,7 @@ async function removeTracking(sessionId, movieName, date, time) {
 
   alert(`✅ Untracked: ${movieName} (${date} ${time})`);
 
-  renderTrackings();
+  await renderTrackings();
 }
 
 // 🔁 Auto refresh
