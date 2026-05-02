@@ -260,11 +260,11 @@ cron.schedule("*/1 * * * *", async () => {
                     sound: "default",
                     tag: `${sessionId}`,
                     channelId: "seat-alerts-v1",
-                    priority: "priority_high", // Equivalent to "Heads-up" notification
-                    defaultSound: true,
-                    defaultVibrateTimings: true,
                     sticky: false,           // Set to true if you don't want them to swipe it away
                     localOnly: false,        // If true, won't mirror to watches/wearables
+                    priority: "high",        // Equivalent to "Heads-up" notification
+                    defaultVibrateTimings: true,
+                    defaultSound: true,
                   }
                 },
                 data: {
