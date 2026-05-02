@@ -231,13 +231,12 @@ async function startTracking() {
   document.getElementById("trackBtn").disabled = true;
   selectedSessionId = null;
 
-  // 🔥 slight delay to avoid race
-  setTimeout(renderTrackings, 300);
-
   // 🔥 scroll to active tracking
   setTimeout(() => {
     document.getElementById("active").scrollIntoView({ behavior: "smooth" });
   }, 500);
+
+  renderTrackings();
 }
 
 // 📋 Active Trackings (with loader + highlight)
@@ -331,13 +330,13 @@ async function removeTracking(sessionId, movieName, date, time) {
     })
   });
 
-  renderTrackings();
-
   alert(`✅ Untracked: ${movieName} (${date} ${time})`);
+
+  renderTrackings();
 }
 
 // 🔁 Auto refresh
-setInterval(renderTrackings, 10000);
+// setInterval(renderTrackings, 10000);
 
 // 🚀 init
 loadMovies();
