@@ -1,7 +1,8 @@
 {
   "name": "Miraj Seat Tracker",
   "short_name": "MirajSeatTracker",
-  "start_url": ".",
+  "start_url": "/miraj-cinemas-seat-tracker/?source=pwa",
+  "scope": "/miraj-cinemas-seat-tracker/",
   "display": "standalone",
   "background_color": "#ffffff",
   "theme_color": "#000000",
