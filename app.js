@@ -242,6 +242,8 @@ async function startTracking() {
 // 📋 Active Trackings (with loader + highlight)
 async function renderTrackings() {
 
+  console.log("\n\nisFetchingTrackings ", isFetchingTrackings)
+
   if (isFetchingTrackings) return;
   isFetchingTrackings = true;
 
