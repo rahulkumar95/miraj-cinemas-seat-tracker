@@ -35,12 +35,12 @@ async function getShowDetails(sessionId) {
   let showTime = null;
 
   try {
-    // const res = await fetch(
-    //   `https://mirajcinemas.com/api/v1.0/webapp/seat_layout/${sessionId}/0210`
-    // );
+    const res = await fetch(
+      `https://mirajcinemas.com/api/v1.0/webapp/seat_layout/${sessionId}/0210`
+    );
 
-    //const data = await res.json();
-    const data = require("./test-seat-layout.json");
+    const data = await res.json();
+    // const data = require("./test-seat-layout.json");
 
     const rawTime =
       data?.data?.sessionDetails?.Session_dtmRealShow;
@@ -198,12 +198,12 @@ cron.schedule("*/1 * * * *", async () => {
 
       // 🔥 SEAT LOGIC
       try {
-        // const res = await fetch(
-        //   `https://mirajcinemas.com/api/v1.0/webapp/seat_layout/${sessionId}/0210`
-        // );
+        const res = await fetch(
+          `https://mirajcinemas.com/api/v1.0/webapp/seat_layout/${sessionId}/0210`
+        );
 
-        //const data = await res.json();
-        const data = require("./test-seat-layout.json");
+        const data = await res.json();
+        // const data = require("./test-seat-layout.json");
 
         const areas =
           data?.data?.seatLayout?.result?.seats?.area;
