@@ -272,7 +272,11 @@ async function startTracking() {
       document.getElementById("active").scrollIntoView({ behavior: "smooth" });
     }, 500);
 
-    renderTrackings();
+    await renderTrackings();
+
+    if (selectedMovie && selectedDate) {
+      await loadTimings(selectedMovie, selectedDate);
+    }
   }
   finally {
 
@@ -334,7 +338,7 @@ async function renderTrackings() {
 
       const heading = document.createElement("div");
 
-      heading.style.background = "#f8f8f8";
+      heading.style.background = "#82eeb6";
       heading.style.borderLeft = "5px solid #2196f3";
       heading.style.padding = "10px 12px";
       heading.style.borderRadius = "6px";
@@ -397,7 +401,14 @@ async function removeTracking(sessionId, movieName, date, time) {
 
   alert(`✅ Untracked: ${movieName} (${date} ${time})`);
 
-  renderTrackings();
+  // 🔥 Update local cache immediately
+  activeSessionIds.delete(String(sessionId));
+
+  await renderTrackings();
+
+  if (selectedMovie && selectedDate) {
+    await loadTimings(selectedMovie, selectedDate);
+  }
 }
 
 // 🔁 Auto refresh
