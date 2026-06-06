@@ -104,7 +104,8 @@ app.post("/track", async (req, res) => {
     area,
     movieName,
     dateStr,
-    timing
+    timing,
+    showTime
   });
 
   console.log("✅ Added tracking:", key);
@@ -124,6 +125,7 @@ app.post("/untrack", (req, res) => {
   const key = `${sessionId}_${token}`;
 
   trackers.delete(key);
+  delete failedCounts[sessionId];
 
   console.log("❌ Removed Tracking:", key);
 
@@ -142,11 +144,18 @@ app.post("/my-trackings", (req, res) => {
     }
   }
 
+  list.sort((a, b) => {
+    return new Date(a.showTime) - new Date(b.showTime);
+  });
+
   res.json({ trackings: list });
 });
 
 // ⏱ Prevent overlap
 let isRunning = false;
+
+// 🔥 Track consecutive seat_layout failures
+const failedCounts = {};
 
 // ⏰ CRON (updates + notifications)
 cron.schedule("*/1 * * * *", async () => {
@@ -193,6 +202,8 @@ cron.schedule("*/1 * * * *", async () => {
           trackers.delete(key);
         }
 
+        delete failedCounts[sessionId];
+
         continue;
       }
 
@@ -201,6 +212,50 @@ cron.schedule("*/1 * * * *", async () => {
         const res = await fetch(
           `https://mirajcinemas.com/api/v1.0/webapp/seat_layout/${sessionId}/0210`
         );
+
+        // 🔥 Show removed from Miraj
+        if (res.status === 404 || res.status === 410) {
+          console.log("❌ Session removed by theater:", sessionId);
+
+          for (let t of users) {
+            const key = `${t.sessionId}_${t.token}`;
+
+            trackers.delete(key);
+            delete failedCounts[sessionId];
+          }
+
+          continue;
+        }
+
+        // 🔥 Temporary failures
+        if (!res.ok) {
+          failedCounts[sessionId] =
+            (failedCounts[sessionId] || 0) + 1;
+
+          console.log(
+            `⚠️ seat_layout failed for ${sessionId}. Count=${failedCounts[sessionId]} Status=${res.status}`
+          );
+
+          // 🔥 Remove after 3 consecutive failures
+          if (failedCounts[sessionId] >= 3) {
+            console.log(
+              "❌ Removing tracking after repeated failures:",
+              sessionId
+            );
+
+            for (let t of users) {
+              const key = `${t.sessionId}_${t.token}`;
+              trackers.delete(key);
+            }
+
+            delete failedCounts[sessionId];
+          }
+
+          continue;
+        }
+
+        // 🔥 Success
+        failedCounts[sessionId] = 0;
 
         const data = await res.json();
         // const data = require("./test-seat-layout.json");

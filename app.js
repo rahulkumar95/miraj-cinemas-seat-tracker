@@ -17,8 +17,14 @@ let selectedMovie = null;
 let selectedDate = null;
 let selectedSessionId = null;
 
+// To verify if previous tracking is still in progress
+let isTrackingInProgress = false;
+
 // 🔥 Track newly added (for highlight)
 let lastAddedSessionId = null;
+
+// 🔥 Active tracked sessions
+let activeSessionIds = new Set();
 
 // 🔔 Foreground notification
 messaging.onMessage(payload => {
@@ -98,10 +104,16 @@ function loadDates(movieCode) {
       "-" +
       String(d.getDate()).padStart(2, "0");
 
-    const formattedDate = d.toLocaleDateString("en-IN", {
-      day: "numeric",
-      month: "short"
+    const dayName = d.toLocaleDateString("en-IN", {
+      weekday: "short"
     });
+
+    const formattedDate =
+      `${dayName}, ` +
+      d.toLocaleDateString("en-IN", {
+        day: "numeric",
+        month: "short"
+      });
 
     const btn = document.createElement("button");
     btn.innerText = formattedDate;
@@ -154,8 +166,20 @@ async function loadTimings(movieCode, date) {
           hour12: true
         });
 
+        const alreadyTracked =
+          activeSessionIds.has(String(t.id));
+
         const btn = document.createElement("button");
-        btn.innerText = formattedTime;
+
+        btn.innerText = alreadyTracked
+          ? `${formattedTime} ✅`
+          : formattedTime;
+
+        if (alreadyTracked) {
+          btn.disabled = true;
+          btn.style.opacity = "0.6";
+          btn.style.cursor = "not-allowed";
+        }
 
         btn.onclick = () => {
           document.querySelectorAll("#timings button").forEach(b => b.classList.remove("selected"));
@@ -186,54 +210,79 @@ async function loadTimings(movieCode, date) {
 
 // 🔔 Start Tracking
 async function startTracking() {
-  if (!selectedSessionId) {
-    alert("Select movie, date, timing");
-    return;
-  }
 
-  const permission = await Notification.requestPermission();
-  if (permission !== "granted") return;
+  if (isTrackingInProgress) return;
 
-  const registration = await navigator.serviceWorker.register("firebase-messaging-sw.js");
-  await navigator.serviceWorker.ready;
+  isTrackingInProgress = true;
 
-  const token = await messaging.getToken({
-    vapidKey: "BJdiJWaKqtqkqJXywj1rGC9PQ4QoZbzwsuNsUUGjGAPR3SQF6TqZrIPIDIInTEUJPvSxdaWBCKLvHBpU2gmuZFM",
-    serviceWorkerRegistration: registration
-  });
-
-  const res = await fetch("https://miraj-cinemas-seat-tracker.onrender.com/track", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      token,
-      sessionId: selectedSessionId,
-      area: "SPECIAL"
-    })
-  });
-
-  const data = await res.json();
-
-  if (!res.ok) {
-    alert(data.message);
-    return;
-  }
-
-  // 🔥 mark for highlight
-  lastAddedSessionId = selectedSessionId;
-
-  alert(`✅ Tracking started: ${data.movieName} (${data.dateStr} ${data.timing})`);
-
-  // 🔥 Reset button again
   document.getElementById("trackBtn").disabled = true;
-  selectedSessionId = null;
 
-  // 🔥 scroll to active tracking
-  setTimeout(() => {
-    document.getElementById("active").scrollIntoView({ behavior: "smooth" });
-  }, 500);
+  try {
+    if (!selectedSessionId) {
+      alert("Select movie, date, timing");
+      return;
+    }
 
-  renderTrackings();
+    const permission = await Notification.requestPermission();
+    if (permission !== "granted") return;
+
+    const registration = await navigator.serviceWorker.register("firebase-messaging-sw.js");
+    await navigator.serviceWorker.ready;
+
+    const token = await messaging.getToken({
+      vapidKey: "BJdiJWaKqtqkqJXywj1rGC9PQ4QoZbzwsuNsUUGjGAPR3SQF6TqZrIPIDIInTEUJPvSxdaWBCKLvHBpU2gmuZFM",
+      serviceWorkerRegistration: registration
+    });
+
+    const res = await fetch("https://miraj-cinemas-seat-tracker.onrender.com/track", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        token,
+        sessionId: selectedSessionId,
+        area: "SPECIAL"
+      })
+    });
+
+    const data = await res.json();
+
+    if (!res.ok) {
+      alert(data.message);
+
+      selectedSessionId = null;
+      document.getElementById("trackBtn").disabled = true;
+
+      return;
+    }
+
+    // 🔥 mark for highlight
+    lastAddedSessionId = selectedSessionId;
+
+    // 🔥 immediately update local cache
+    activeSessionIds.add(String(selectedSessionId));
+
+    alert(`✅ Tracking started: ${data.movieName} (${data.dateStr} ${data.timing})`);
+
+    // 🔥 Reset button again
+    document.getElementById("trackBtn").disabled = true;
+    selectedSessionId = null;
+
+    // 🔥 scroll to active tracking
+    setTimeout(() => {
+      document.getElementById("active").scrollIntoView({ behavior: "smooth" });
+    }, 500);
+
+    renderTrackings();
+  }
+  finally {
+
+    isTrackingInProgress = false;
+
+    // 🔥 Re-enable only if user still has a timing selected
+    if (selectedSessionId) {
+      document.getElementById("trackBtn").disabled = false;
+    }
+  }
 }
 
 // 📋 Active Trackings (with loader + highlight)
@@ -261,6 +310,13 @@ async function renderTrackings() {
   const data = await res.json();
 
   const list = data.trackings || [];
+
+  // 🔥 Rebuild active tracking cache
+  activeSessionIds.clear();
+
+  list.forEach(t => {
+    activeSessionIds.add(String(t.sessionId));
+  });
 
   container.innerHTML = "";
 
