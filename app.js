@@ -325,34 +325,56 @@ async function renderTrackings() {
     return;
   }
 
+  const grouped = {};
+
   list.forEach(t => {
-    const div = document.createElement("div");
-
-    // 🔥 card style
-    div.style.marginBottom = "10px";
-    div.style.padding = "12px";
-    div.style.border = "1px solid #ccc";
-    div.style.borderRadius = "10px";
-    div.style.background = "#f9f9f9";
-
-    // 🔥 highlight newly added
-    if (t.sessionId == lastAddedSessionId) {
-      div.style.border = "2px solid green";
-      div.style.background = "#eaffea";
-
-      // remove highlight after render
-      setTimeout(() => {
-        lastAddedSessionId = null;
-      }, 1000);
+    if (!grouped[t.movieName]) {
+      grouped[t.movieName] = [];
     }
 
-    div.innerHTML = `
-        <div><b>🎬 ${t.movieName}</b></div>
-        <div>📅 ${t.dateStr} | ⏰ ${t.timing}</div>
-        <button onclick="removeTracking('${t.sessionId}', '${t.movieName}', '${t.dateStr}', '${t.timing}')">❌ Untrack</button>
-      `;
+    grouped[t.movieName].push(t);
+  });
 
-    container.appendChild(div);
+
+  Object.entries(grouped).forEach(([movieName, shows]) => {
+
+    const movieDiv = document.createElement("div");
+
+    movieDiv.innerHTML = `
+    <h3>🎬 ${movieName} (${shows.length})</h3>
+  `;
+
+    container.appendChild(movieDiv);
+
+    shows.forEach(t => {
+
+      const div = document.createElement("div");
+
+      // 🔥 card style
+      div.style.marginBottom = "10px";
+      div.style.padding = "12px";
+      div.style.border = "1px solid #ccc";
+      div.style.borderRadius = "10px";
+      div.style.background = "#f9f9f9";
+
+      // 🔥 highlight newly added
+      if (t.sessionId == lastAddedSessionId) {
+        div.style.border = "2px solid green";
+        div.style.background = "#eaffea";
+
+        // remove highlight after render
+        setTimeout(() => {
+          lastAddedSessionId = null;
+        }, 1000);
+      }
+
+      div.innerHTML = `
+      <div>📅 ${t.dateStr} | ⏰ ${t.timing}</div>
+      <button onclick="removeTracking('${t.sessionId}', '${t.movieName}', '${t.dateStr}', '${t.timing}')">❌ Untrack</button>
+    `;
+
+      container.appendChild(div);
+    });
   });
 
 }
