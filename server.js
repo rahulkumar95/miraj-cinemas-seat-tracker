@@ -61,10 +61,14 @@ async function getShowDetails(sessionId) {
         hour12: true
       });
 
-      dateStr = d.toLocaleDateString("en-IN", {
+      const dayName = d.toLocaleDateString("en-IN", {
+        weekday: "short"
+      });
+
+      dateStr = `${dayName}, ${d.toLocaleDateString("en-IN", {
         day: "numeric",
         month: "short"
-      });
+      })}`;
     }
 
   } catch (err) {

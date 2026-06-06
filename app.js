@@ -334,10 +334,13 @@ async function renderTrackings() {
 
       const heading = document.createElement("div");
 
-      heading.style.marginTop = "15px";
+      heading.style.background = "#f8f8f8";
+      heading.style.borderLeft = "5px solid #2196f3";
+      heading.style.padding = "10px 12px";
+      heading.style.borderRadius = "6px";
+      heading.style.marginTop = "20px";
       heading.style.marginBottom = "10px";
       heading.style.fontWeight = "bold";
-      heading.style.fontSize = "18px";
 
       heading.innerHTML = `📅 ${t.dateStr}`;
 
