@@ -95,7 +95,7 @@ app.post("/track", async (req, res) => {
   }
 
   // 🔥 USE COMMON FUNCTION
-  const { movieName, dateStr, timing } =
+  const { movieName, dateStr, timing, showTime } =
     await getShowDetails(sessionId);
 
   trackers.set(key, {
