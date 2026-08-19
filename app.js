@@ -226,8 +226,7 @@ async function startTracking() {
     const permission = await Notification.requestPermission();
     if (permission !== "granted") return;
 
-    const registration = await navigator.serviceWorker.register("firebase-messaging-sw.js");
-    await navigator.serviceWorker.ready;
+    const registration = await navigator.serviceWorker.ready;
 
     const token = await messaging.getToken({
       vapidKey: "BJdiJWaKqtqkqJXywj1rGC9PQ4QoZbzwsuNsUUGjGAPR3SQF6TqZrIPIDIInTEUJPvSxdaWBCKLvHBpU2gmuZFM",
@@ -294,7 +293,8 @@ async function renderTrackings() {
   // 🔥 loading state
   container.innerHTML = "<div style='opacity:0.6'>⏳ Loading...</div>";
 
-  const registration = await navigator.serviceWorker.ready;
+  const registration = await navigator.serviceWorker.register("firebase-messaging-sw.js");
+  await navigator.serviceWorker.ready;
 
   const token = await messaging.getToken({
     vapidKey: "BJdiJWaKqtqkqJXywj1rGC9PQ4QoZbzwsuNsUUGjGAPR3SQF6TqZrIPIDIInTEUJPvSxdaWBCKLvHBpU2gmuZFM",
